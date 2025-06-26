@@ -88,7 +88,7 @@ with st.form(key='report_form', clear_on_submit=True):
         # 報告者用に「新しく」列を作成
         reporter_col1, reporter_col2 = st.columns([2, 1]) # 比率はお好みで [3, 2] などに変更可能
         with reporter_col1:
-            reporter_name = st.text_input("氏名", label_visibility="collapsed", placeholder="氏名を入力")
+            reporter_name = st.text_input("報告者氏名", label_visibility="collapsed", placeholder="氏名を入力")
         with reporter_col2:
             job_type = st.selectbox("職種",
                             ["Dr", "Ns", "PT", "At", "RT", "その他"],
@@ -104,12 +104,39 @@ with st.form(key='report_form', clear_on_submit=True):
             default=[],
             label_visibility="collapsed")
         
+        # --- 総実務経験 ---
+        st.write("**総実務経験**")
+        location = st.selectbox("総実務経験", 
+                                ["1年未満", "1～3年未満", "3～5年未満", "5～10年未満", "10年以上"],
+                                label_visibility="collapsed")
+        
+        # --- 入職年数 ---
+        st.write("**入職年数**")
+        location = st.selectbox("入職年数", 
+                                ["1年未満", "1～3年未満", "3～5年未満", "5～10年未満", "10年以上"],
+                                label_visibility="collapsed")
+        
     with col2:
+        
+        # --- 患者情報 ---
+        st.write("**患者情報**")
+        patient_col1, patient_col2 = st.columns([1, 2])
+        with patient_col1:
+            patient_ID = st.text_input("患者ID", label_visibility="collapsed", placeholder="IDを入力")
+        with patient_col2:
+            patient_name = st.text_input("患者氏名", label_visibility="collapsed", placeholder="氏名を入力")
+        
         # --- 発生場所 ---
         st.write("**発生場所**")
-        location = st.selectbox("発生場所", 
-                                ["外来診察室", "外来待合室", "受付", "レントゲン室", "リハビリ室", "廊下", "その他"],
-                                label_visibility="collapsed")
+        location = st.multiselect(
+            "関係場所をすべて選択してください",  # このラベルが不要なら label_visibility="collapsed" を追加
+            options=["1FMRI室", "1F操作室", "1F撮影室", "1Fエコー室", "1F廊下", "1Fトイレ",
+                     "2F受付", "2F待合", "2F診察室", "2F処置室", "2Fトイレ",
+                     "3Fリハビリ室", "3F受付", "3F待合","3Fトイレ",
+                     "4Fリハビリ室", "4F受付", "4F待合","4Fトイレ"],
+            default=[],
+            label_visibility="collapsed")
+        
 
     st.markdown("---")
     
