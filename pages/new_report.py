@@ -7,20 +7,11 @@ st.set_page_config(page_title="新規報告", page_icon="📝")
 st.title("📝 新規報告フォーム")
 st.markdown("---")
 
-# --- 関数定義 ---
-def generate_id():
-    """報告IDを生成する関数"""
-    if 'report_df' in st.session_state and not st.session_state.report_df.empty:
-        return st.session_state.report_df["報告ID"].max() + 1
-    return 1
-
 # st.formを使うと、中の項目をすべて入力してから一度に送信できる
 with st.form(key='report_form', clear_on_submit=True):
     
     # --- 基本情報（ここまでは前回と同様） ---
     st.subheader("基本情報")
-    report_id = generate_id()
-    st.info(f"今回の報告ID: {report_id}")
     
      # ---影響度レベル---
     st.write("**影響度レベル**")
@@ -128,13 +119,11 @@ with st.form(key='report_form', clear_on_submit=True):
         
         # --- 発生場所 ---
         st.write("**発生場所**")
-        location = st.multiselect(
-            "関係場所をすべて選択してください",  # このラベルが不要なら label_visibility="collapsed" を追加
-            options=["1FMRI室", "1F操作室", "1F撮影室", "1Fエコー室", "1F廊下", "1Fトイレ",
-                     "2F受付", "2F待合", "2F診察室", "2F処置室", "2Fトイレ",
-                     "3Fリハビリ室", "3F受付", "3F待合","3Fトイレ",
-                     "4Fリハビリ室", "4F受付", "4F待合","4Fトイレ"],
-            default=[],
+        location = st.selectbox("発生場所",
+                                ["1FMRI室", "1F操作室", "1F撮影室", "1Fエコー室", "1F廊下", "1Fトイレ",
+                                    "2F受付", "2F待合", "2F診察室", "2F処置室", "2Fトイレ",
+                                    "3Fリハビリ室", "3F受付", "3F待合","3Fトイレ",
+                                    "4Fリハビリ室", "4F受付", "4F待合","4Fトイレ"],
             label_visibility="collapsed")
         
 
@@ -214,48 +203,69 @@ with st.form(key='report_form', clear_on_submit=True):
 
 # --- データ保存処理 ---
 if submit_button:
-    # 必須項目のチェック
-    if not reporter_name:
-        st.error("報告者氏名を入力してください。")
+    if not reporter_name or not situation or not countermeasure:
+        # エラーメッセージをリストで管理
+        error_messages = []
+        if not reporter_name:
+            error_messages.append("報告者氏名")
+        if not situation:
+            error_messages.append("発生の状況と直後の対応")
+        if not countermeasure:
+            error_messages.append("今後の対策")
+        
+        # st.error() で入力が必須であることをユーザーに伝える
+        st.error(f"以下の必須項目を入力してください: {', '.join(error_messages)}")
     else:
+        # この else ブロックの中に、今までのDB保存処理をすべて移動する
+        from db_utils import add_report
         # 発生日時を結合
         occurrence_datetime = datetime.datetime.combine(occurrence_date, occurrence_time)
         
-        # 選択された詳細項目を文字列に変換して保存（簡易的な方法）
-        # 本格的にやるならJSON形式などで保存すると後で扱いやすい
-        content_full_details = f"カテゴリ: {content_category}, 詳細: {', '.join(content_details)}"
-        # '転倒・転落'の場合の追加情報
-        if 'injury_details' in locals():
-            content_full_details += f" / 外傷: {', '.join(injury_details)}"
+        # 選択された詳細項目を文字列に変換
+        connection_str = ", ".join(connection_with_accident)
+        # (他の multiselect 項目も同様に文字列に変換)
         
-        # 原因の情報を結合
+        # 2. インシデント内容 (multiselect)
+        #    ※ご自身のコードに合わせて変数名を調整してください
+        #    例: content_details がリストの場合
+        content_details_str = ", ".join(content_details if isinstance(content_details, list) else [])
+        if 'content_other_text' in locals() and content_other_text:
+            content_details_str += f", その他: {content_other_text}"
+
+        # 3. 発生原因 (複数のmultiselect)
+        #    ※ご自身のコードに合わせて変数名を調整してください
         cause_list = []
-        for category, items in selected_causes.items():
-            if items:
-                cause_list.append(f"{category}: {', '.join(items)}")
-        cause_summary = " | ".join(cause_list)
-
-
-        # 新しい報告データを辞書として作成
+        if 'selected_causes' in locals() and isinstance(selected_causes, dict):
+            for category, items in selected_causes.items():
+                if items:
+                    cause_list.append(f"{category}: {', '.join(items)}")
+        cause_summary_str = " | ".join(cause_list)
+        
+        # データベースに保存するデータを辞書としてまとめる
+        # ※キーの名前は db_utils.py のテーブル定義と一致させる
         new_data = {
-            # 基本情報
-            "報告ID": report_id, "発生日時": occurrence_datetime, "影響度レベル": level,
-            "報告者": reporter_name, "職種": job_type, "発生場所": location,
-            # 詳細情報
-            "インシデント内容": content_full_details,  # 結合した文字列を保存
-            "発生原因": cause_summary, # 結合した文字列を保存
-            "マニュアル関連": manual_relation,
-            # 自由記述
-            "状況詳細": situation, "今後の対策": countermeasure
+            "occurrence_datetime": occurrence_datetime,
+            "reporter_name": reporter_name,
+            "job_type": job_type,
+            "level": level,
+            "location": location,
+            "connection_with_accident": connection_str,
+            "content_details": "...", # ここにはインシデント内容の文字列を入れる
+            "cause_details": "...",   # ここには発生原因の文字列を入れる
+            "manual_relation": "...", # ここにはマニュアル関連の選択結果を入れる
+            "situation": situation,
+            "countermeasure": countermeasure
         }
         
-        # session_stateのデータフレームを更新
-        # 新しい列に合わせて、既存のデータフレームも更新が必要
-        if 'インシデント内容' not in st.session_state.report_df.columns:
-            st.session_state.report_df = pd.DataFrame(columns=new_data.keys())
+        # データベースに追加
+        add_report(new_data)
         
-        new_df = pd.DataFrame([new_data])
-        st.session_state.report_df = pd.concat([st.session_state.report_df, new_df], ignore_index=True)
+        st.success("報告がデータベースに保存されました。")
         
-        st.success("報告が完了しました。")
+        # (2) session_stateに 'data_version' がなければ初期化
+        if 'data_version' not in st.session_state:
+            st.session_state.data_version = 0
+        # (3) バージョン番号を1つ上げる
+        st.session_state.data_version += 1
+        
         st.balloons()

@@ -1,17 +1,38 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px # よりリッチなグラフ作成ライブラリ
+import plotly.express as px
+from db_utils import get_all_reports
 
 st.set_page_config(page_title="グラフ・分析", page_icon="📊")
 
 st.title("📊 グラフ・分析ダッシュボード")
 st.markdown("---")
 
-df = st.session_state.report_df
+if 'data_version' not in st.session_state:
+    st.session_state.data_version = 0
+    
+df = get_all_reports(st.session_state.data_version)
 
 if df.empty:
     st.info("分析対象のデータがありません。「新規報告」ページから入力してください。")
 else:
+    # ▼▼▼ ここに列名変更の処理を追加 ▼▼▼
+    df.rename(columns={
+        'id': '報告ID',
+        'occurrence_datetime': '発生日時',
+        'reporter_name': '報告者',
+        'job_type': '職種',
+        'level': '影響度レベル',  # ←←← 'level' を '影響度レベル' に変更！
+        'location': '発生場所',
+        'connection_with_accident': '事故との関連性',
+        'content_details': 'インシデント内容',
+        'cause_details': '発生原因',
+        'manual_relation': 'マニュアル関連',
+        'situation': '状況詳細',
+        'countermeasure': '今後の対策',
+        'created_at': '報告日時'
+    }, inplace=True)
+    
     level_order = ["0", "1", "2", "3a", "3b", "4", "5", "その他"]
     
     # '影響度レベル' 列を、定義した順序を持つ「カテゴリ型」に変換する
