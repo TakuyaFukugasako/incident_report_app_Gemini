@@ -77,6 +77,6 @@ else:
     df_time = df.copy()
     df_time['発生日時'] = pd.to_datetime(df_time['発生日時'])
     # 月ごとに集計
-    monthly_counts = df_time.set_index('発生日時').resample('M').size()
+    monthly_counts = df_time.set_index('発生日時').resample('ME').size()
     monthly_counts.index = monthly_counts.index.strftime('%Y-%m')
     st.line_chart(monthly_counts)
