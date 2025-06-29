@@ -20,6 +20,8 @@ else:
     df.rename(columns={
         'id': '報告ID',
         'occurrence_datetime': '発生日時',
+        'years_of_experience': '経験年数',
+        'years_since_joining': '入職年数',
         'reporter_name': '報告者',
         'job_type': '職種',
         'level': '影響度レベル',  # ←←← 'level' を '影響度レベル' に変更！
