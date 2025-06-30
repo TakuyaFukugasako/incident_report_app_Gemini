@@ -65,8 +65,7 @@ def add_report(data: dict):
         conn.commit()
 
 # st.cache_data を使うことで、引数が変わらない限りDBアクセスをスキップできる
-@st.cache_data
-def get_all_reports(_data_version): # 引数を設定してキャッシュを制御
+def get_all_reports():
     """全てのインシデント報告を取得します"""
     with get_db_connection() as conn:
         # index_col='id' を指定すると、DataFrameのインデックスがid列になる

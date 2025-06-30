@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import datetime
@@ -6,49 +5,71 @@ import json
 from db_utils import add_report, add_draft, DateTimeEncoder # 必要な関数をインポート
 
 st.set_page_config(page_title="新規報告", page_icon="✍️")
+
+# --- メッセージ表示エリア ---
+if st.session_state.get("report_submitted"):
+    st.success("報告がデータベースに保存されました。")
+    st.balloons()
+    del st.session_state.report_submitted # メッセージ表示後にフラグを削除
+
+if st.session_state.get("draft_loaded_message"):
+    st.success("下書きを読み込みました。")
+    del st.session_state.draft_loaded_message # メッセージ表示後にフラグを削除
+
 st.title("✍️ 新規報告フォーム")
 st.markdown("--- ")
+
+# --- デフォルト値の定義 ---
+defaults = {
+    'level': "1",
+    'occurrence_date': datetime.date.today(),
+    'occurrence_time': datetime.datetime.now().time(),
+    'reporter_name': "",
+    'job_type': "Dr",
+    'connection_with_accident': [],
+    'years_of_experience': "1年未満",
+    'years_since_joining': "1年未満",
+    'patient_ID': "",
+    'patient_name': "",
+    'location': "1FMRI室",
+    'situation': "",
+    'countermeasure': "",
+    'content_category': "診察・リハビリ",
+    'content_details_shinsatsu': [],
+    'content_details_tentou': [],
+    'injury_details': [],
+    'injury_other_text': "",
+    'content_details_yakuzai': [],
+    'med_error_details': [],
+    'med_error_other_text': "",
+    'cause_不適切な指示': [],
+    'cause_不適切な指示_other': "",
+    'cause_無確認': [],
+    'cause_無確認_other': "",
+    'cause_指示の見落としなど': [],
+    'cause_指示の見落としなど_other': "",
+    'cause_患者観察の不足': [],
+    'cause_患者観察の不足_other': "",
+    'cause_説明・知識・経験の不足': [],
+    'cause_説明・知識・経験の不足_other': "",
+    'cause_偶発症・災害': [],
+    'cause_偶発症・災害_other': "",
+    'manual_relation': "手順に従っていた"
+}
+
+# --- 原因選択肢の定義 ---
+cause_options = {
+    "不適切な指示": ["口頭指示", "検査伝票・指示ラベル・処方箋の誤記", "その他"],
+    "無確認": ["検査伝票・指示ラベル・処方箋で確認せず", "思い込み・勘違い", "疑問に思ったが確認せず", "ダブルチェックせず", "正しい確認方法を知らなかった", "機器・器具の操作方法を確認しなかった", "患者情報を確認しなかった", "その他"],
+    "指示の見落としなど": ["指示の見落とし", "指示の見誤り", "その他"],
+    "患者観察の不足": ["処置・検査・手技中または直前直後における観察不足", "投薬中または直前直後における観察不足"],
+    "説明・知識・経験の不足": ["説明不足", "業務に対する知識不足", "業務に対する技術不足"],
+    "偶発症・災害": ["偶発症", "不可抗力（患者に関する発見）", "不可抗力（施設設備等に関する発見・災害被害等）"]
+}
 
 # --- セッションステートの初期化 ---
 def init_session_state():
     """セッションステートのキーを、ウィジェットに適したデフォルト値で初期化する"""
-    defaults = {
-        'level': "1",  # selectboxのデフォルト値
-        'occurrence_date': datetime.date.today(),
-        'occurrence_time': datetime.datetime.now().time(),
-        'reporter_name': "",
-        'job_type': "Dr", # selectboxのデフォルト値
-        'connection_with_accident': [], # multiselectのデフォルト値
-        'years_of_experience': "1年未満",
-        'years_since_joining': "1年未満",
-        'patient_ID': "",
-        'patient_name': "",
-        'location': "1FMRI室",
-        'situation': "",
-        'countermeasure': "",
-        'content_category': "診察・リハビリ", # radioのデフォルト値
-        'content_details_shinsatsu': [],
-        'content_details_tentou': [],
-        'injury_details': [],
-        'injury_other_text': "",
-        'content_details_yakuzai': [],
-        'med_error_details': [],
-        'med_error_other_text': "",
-        'cause_不適切な指示': [],
-        'cause_不適切な指示_other': "",
-        'cause_無確認': [],
-        'cause_無確認_other': "",
-        'cause_指示の見落としなど': [],
-        'cause_指示の見落としなど_other': "",
-        'cause_患者観察の不足': [],
-        'cause_患者観察の不足_other': "",
-        'cause_説明・知識・経験の不足': [],
-        'cause_説明・知識・経験の不足_other': "",
-        'cause_偶発症・災害': [],
-        'cause_偶発症・災害_other': "",
-        'manual_relation': "手順に従っていた" # radioのデフォルト値
-    }
-
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
@@ -66,6 +87,8 @@ if "loaded_draft" in st.session_state:
             st.session_state[k] = v
     # 読み込み後は下書きデータを削除
     del st.session_state["loaded_draft"]
+    # 読み込み完了メッセージ用のフラグを立てる
+    st.session_state.draft_loaded_message = True
 
 # --- アプリケーション開始時に初期化を実行 ---
 init_session_state()
@@ -233,14 +256,12 @@ if submit_button:
         }
         
         add_report(new_data)
-        st.success("報告がデータベースに保存されました。")
-        st.balloons()
         
-        if 'data_version' not in st.session_state:
-            st.session_state.data_version = 0
-        st.session_state.data_version += 1
-
         # フォーム送信後、セッションステートをクリアしてリセット
         for key in defaults.keys():
-            del st.session_state[key]
+            if key in st.session_state:
+                del st.session_state[key]
+        
+        # 報告完了メッセージ用のフラグを立てる
+        st.session_state.report_submitted = True
         st.rerun()

@@ -20,20 +20,23 @@ else:
     # --- 一覧をカード形式で表示 ---
     for _, row in df.iterrows():
         with st.container():
+            # --- JSONデータを読み込んで報告者名を取得 ---
+            draft_data = json.loads(row['data_json'])
+            reporter_name = draft_data.get('reporter_name', '氏名未入力') # .get()で安全に取得
+
             st.markdown(f"#### {row['title']}")
             col1, col2, col3 = st.columns([3, 2, 1])
             with col1:
-                st.write(f"*保存日時: {pd.to_datetime(row['created_at']).strftime('%Y-%m-%d %H:%M')}* ")
+                st.write(f"*保存日時: {pd.to_datetime(row['created_at']).strftime('%Y-%m-%d %H:%M')}*")
+                # 報告者名を表示（空の場合は「氏名未入力」）
+                st.write(f"**代表報告者:** {reporter_name if reporter_name else '氏名未入力'}")
             with col2:
                 # 読み込みボタン
                 if st.button("この下書きを読み込む", key=f"load_{row['id']}", use_container_width=True):
-                    # JSON文字列を辞書に変換
-                    loaded_data = json.loads(row['data_json'])
                     # session_stateに保存して新規報告ページに渡す
-                    st.session_state.loaded_draft = loaded_data
-                    st.success(f"「{row['title']}」を読み込みました。左の「新規報告」ページに移動して確認してください。")
-                    # 読み込み後、すぐにページを再読み込みして状態をクリア
-                    st.rerun()
+                    st.session_state.loaded_draft = draft_data # 既に読み込み済みのデータを使用
+                    # 新規報告ページに切り替え
+                    st.switch_page("pages/1_新規報告.py")
             with col3:
                 # 削除ボタン
                 if st.button("❌ 削除", key=f"delete_{row['id']}", use_container_width=True):

@@ -4,13 +4,10 @@ from db_utils import get_all_reports
 
 st.set_page_config(page_title="検索・一覧", page_icon="🔍")
 
-st.title("🔍 報告データの検索・一覧")
+st.title(" 報告データの検索・一覧")
 st.markdown("---")
 
-if 'data_version' not in st.session_state:
-    st.session_state.data_version = 0
-    
-df = get_all_reports(st.session_state.data_version) # DBから全てのデータを読み込む
+df = get_all_reports() # DBから全てのデータを読み込む
 
 if df.empty:
     st.info("まだ報告データがありません。「新規報告」ページから入力してください。")

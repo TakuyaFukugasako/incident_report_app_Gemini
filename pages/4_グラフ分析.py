@@ -5,13 +5,10 @@ from db_utils import get_all_reports
 
 st.set_page_config(page_title="グラフ・分析", page_icon="📊")
 
-st.title("📊 グラフ・分析ダッシュボード")
+st.title(" グラフ・分析ダッシュボード")
 st.markdown("---")
 
-if 'data_version' not in st.session_state:
-    st.session_state.data_version = 0
-    
-df = get_all_reports(st.session_state.data_version)
+df = get_all_reports()
 
 if df.empty:
     st.info("分析対象のデータがありません。「新規報告」ページから入力してください。")
