@@ -35,6 +35,7 @@ else:
                 if st.button("この下書きを読み込む", key=f"load_{row['id']}", use_container_width=True):
                     # session_stateに保存して新規報告ページに渡す
                     st.session_state.loaded_draft = draft_data # 既に読み込み済みのデータを使用
+                    st.session_state.loaded_draft_id = row['id'] # ★ 下書きのIDも保存
                     # 新規報告ページに切り替え
                     st.switch_page("pages/1_新規報告.py")
             with col3:

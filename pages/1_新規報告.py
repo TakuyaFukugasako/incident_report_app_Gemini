@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import json
-from db_utils import add_report, add_draft, DateTimeEncoder # 必要な関数をインポート
+from db_utils import add_report, add_draft, delete_draft, DateTimeEncoder # 必要な関数をインポート
 
 st.set_page_config(page_title="新規報告", page_icon="✍️")
 
@@ -256,7 +256,12 @@ if submit_button:
         }
         
         add_report(new_data)
-        
+
+        # もし下書きから読み込まれたレポートであれば、元のデータを削除
+        if st.session_state.get('loaded_draft_id'):
+            delete_draft(st.session_state.loaded_draft_id)
+            del st.session_state['loaded_draft_id'] # 削除後にIDをクリア
+
         # フォーム送信後、セッションステートをクリアしてリセット
         for key in defaults.keys():
             if key in st.session_state:
