@@ -1,84 +1,106 @@
+import streamlit as st
 import sqlite3
 import pandas as pd
-import streamlit as st
+import datetime
+import json
 
-DB_PATH = "incident_reports.db"
+DB_NAME = "incident_reports.db"
 
+def get_db_connection():
+    """データベース接続を取得します"""
+    return sqlite3.connect(DB_NAME)
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    # 本提出テーブル
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            occurrence_datetime TIMESTAMP NOT NULL,
-            reporter_name TEXT NOT NULL,
-            job_type TEXT,
-            level TEXT,
-            location TEXT,
-            connection_with_accident TEXT,
-            content_details TEXT,
-            cause_details TEXT,
-            manual_relation TEXT,
-            situation TEXT,
-            countermeasure TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    """
+    データベースとテーブルを初期化します。
+    reportsテーブルとdraftsテーブルがなければ作成します。
+    """
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # --- インシデント報告テーブル ---
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                occurrence_datetime DATETIME NOT NULL,
+                reporter_name TEXT NOT NULL,
+                job_type TEXT,
+                level TEXT,
+                location TEXT,
+                connection_with_accident TEXT,
+                years_of_experience TEXT,
+                years_since_joining TEXT,
+                patient_ID TEXT,
+                patient_name TEXT,
+                content_category TEXT,
+                content_details TEXT,
+                cause_details TEXT,
+                manual_relation TEXT,
+                situation TEXT NOT NULL,
+                countermeasure TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # --- 下書きテーブル ---
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS drafts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                data_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+
+# --- レポート関連 ---
+
+def add_report(data: dict):
+    """インシデント報告をデータベースに追加します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # 辞書のキーと値からSQL文を生成
+        columns = ', '.join(data.keys())
+        placeholders = ', '.join(['?'] * len(data))
+        sql = f"INSERT INTO reports ({columns}) VALUES ({placeholders})"
+        cursor.execute(sql, tuple(data.values()))
+        conn.commit()
+
+# st.cache_data を使うことで、引数が変わらない限りDBアクセスをスキップできる
+@st.cache_data
+def get_all_reports(_data_version): # 引数を設定してキャッシュを制御
+    """全てのインシデント報告を取得します"""
+    with get_db_connection() as conn:
+        # index_col='id' を指定すると、DataFrameのインデックスがid列になる
+        df = pd.read_sql("SELECT * FROM reports ORDER BY occurrence_datetime DESC", conn, index_col='id')
+        return df
+
+# --- 下書き関連 ---
+
+def add_draft(title: str, data_json: str):
+    """下書きをデータベースに追加します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO drafts (title, data_json) VALUES (?, ?)",
+            (title, data_json)
         )
-    ''')
-    # ▼下書きテーブル
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS drafts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        data_json TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
-    conn.commit()
-    conn.close()
+        conn.commit()
 
-def add_report(data): #repor_data?
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''
-    INSERT INTO reports (
-        occurrence_datetime, reporter_name, job_type, level, location,
-        connection_with_accident, content_details, cause_details,
-        manual_relation, situation, countermeasure
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        data['occurrence_datetime'], data['reporter_name'], data['job_type'],
-        data['level'], data['location'], data['connection_with_accident'],
-        data['content_details'], data['cause_details'],
-        data['manual_relation'], data['situation'], data['countermeasure']
-    ))
-    conn.commit()
-    conn.close()
+def get_all_drafts() -> pd.DataFrame:
+    """全ての下書きを取得します"""
+    with get_db_connection() as conn:
+        df = pd.read_sql("SELECT * FROM drafts ORDER BY created_at DESC", conn)
+        return df
 
-def get_all_reports(_=None):
-    conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query('SELECT * FROM reports ORDER BY created_at DESC', conn)
-    conn.close()
-    return df
+def delete_draft(draft_id: int):
+    """指定されたIDの下書きを削除します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM drafts WHERE id = ?", (draft_id,))
+        conn.commit()
 
-# 下書き用
-def add_draft(title, data_json):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('INSERT INTO drafts (title, data_json) VALUES (?, ?)', (title, data_json))
-    conn.commit()
-    conn.close()
-
-def get_all_drafts():
-    conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query('SELECT * FROM drafts ORDER BY created_at DESC', conn)
-    conn.close()
-    return df
-
-def delete_draft(draft_id):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('DELETE FROM drafts WHERE id = ?', (draft_id,))
-    conn.commit()
-    conn.close()
+class DateTimeEncoder(json.JSONEncoder):
+    """datetime, date, timeオブジェクトをJSONシリアライズ可能にするためのエンコーダー"""
+    def default(self, obj):
+        if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
+            return obj.isoformat()
+        return super(DateTimeEncoder, self).default(obj)
