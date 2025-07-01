@@ -14,10 +14,12 @@ def init_db():
     """
     データベースとテーブルを初期化します。
     reportsテーブルとdraftsテーブルがなければ作成します。
+    既存のreportsテーブルにカラムが不足している場合は追加します。
     """
     with get_db_connection() as conn:
         cursor = conn.cursor()
         # --- インシデント報告テーブル ---
+        # 最新のスキーマでテーブル作成を試みる
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +48,28 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # --- テーブルスキーマのマイグレーション ---
+        # reportsテーブルのカラム情報を取得し、不足分を追加
+        cursor.execute("PRAGMA table_info(reports)")
+        columns = [row[1] for row in cursor.fetchall()]
+
+        # あるべきカラムを辞書で定義
+        expected_columns = {
+            "years_of_experience": "TEXT",
+            "years_since_joining": "TEXT",
+            "patient_gender": "TEXT",
+            "patient_age": "INTEGER",
+            "dementia_status": "TEXT",
+            "patient_status_change_accident": "TEXT",
+            "patient_status_change_patient_explanation": "TEXT",
+            "patient_status_change_family_explanation": "TEXT"
+        }
+
+        for col_name, col_type in expected_columns.items():
+            if col_name not in columns:
+                cursor.execute(f"ALTER TABLE reports ADD COLUMN {col_name} {col_type}")
+
         # --- 下書きテーブル ---
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS drafts (

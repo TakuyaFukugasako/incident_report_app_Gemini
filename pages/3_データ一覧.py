@@ -32,8 +32,8 @@ else:
         'patient_age': '年齢',
         'dementia_status': '認知症の有無',
         'patient_status_change_accident': '患者状態変化',
-        'patient_status_change_patient_explanation': '患者説明',
-        'patient_status_change_family_explanation': '家族説明',
+        'patient_status_change_patient_explanation': '患者への説明',
+        'patient_status_change_family_explanation': '家族への説明',
         'content_category': '内容分類',
         'content_details': 'インシデント内容',
         'cause_details': '発生原因',
@@ -170,7 +170,7 @@ else:
             report_details = selected_report_details.iloc[0]
 
             # レポート全体のコンテナ
-            st.markdown("<div style='border: 1px solid #dcdcdc; border-radius: 12px; padding: 30px; background-color: #ffffff; box-shadow: 0 8px 20px rgba(0,0,0,0.08);'>", unsafe_allow_html=True)
+            st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 8px; padding: 30px; background-color: #ffffff; box-shadow: 0 6px 12px rgba(0,0,0,0.08);'>", unsafe_allow_html=True)
 
             # --- 閉じるボタン ---
             close_col, _ = st.columns([1, 5])
@@ -184,72 +184,83 @@ else:
             def section_header(title):
                 return f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 35px; margin-bottom: 20px; font-weight: 600; letter-spacing: 0.5px;'>{title}</h3>"
 
-            def detail_item_html(label, value):
-                return f"<div style='margin-bottom: 12px; font-size: 16px; color: #34495e;'><b style='color: #2c3e50; margin-right: 5px;'>{label}:</b> {value}</div>"
+            def detail_item_html(label, value, highlight=False):
+                value_style = "font-weight: bold; color: #c0392b;" if highlight else ""
+                return f"<div style='margin-bottom: 12px; font-size: 16px; color: #34495e;'><b style='color: #2c3e50; margin-right: 5px;'>{label}:</b> <span style='{value_style}'>{value}</span></div>"
 
             def detail_block_html(label, value):
                 escaped_value = str(value).replace('\n', '<br>')
-                return f"<div style='margin-bottom: 20px;'><b style='display: block; margin-bottom: 8px; color: #2c3e50; font-size: 16px;'>{label}:</b><div style='padding: 18px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; line-height: 1.7; color: #333; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);'>{escaped_value if escaped_value else '-'}</div></div>"
+                return f"<div style='margin-bottom: 20px;'><b style='display: block; margin-bottom: 8px; color: #2c3e50; font-size: 16px;'>{label}:</b><div style='padding: 18px; background-color: #fdfefe; border: 1px solid #e5e7e9; border-radius: 8px; line-height: 1.7; color: #34495e; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);'>{escaped_value if escaped_value else '-'}</div></div>"
 
-            # --- 概要サマリー --- (上司向け)
+            # --- 概要サマリー ---
             st.markdown(section_header("概要"), unsafe_allow_html=True)
             summary_cols = st.columns([2, 3, 2])
             with summary_cols[0]:
-                st.markdown(detail_item_html("影響度レベル", report_details.get('影響度レベル', '-')), unsafe_allow_html=True)
+                st.markdown(detail_item_html("影響度レベル", report_details.get('影響度レベル', '-'), highlight=True), unsafe_allow_html=True)
             with summary_cols[1]:
-                st.markdown(detail_item_html("発生日時", pd.to_datetime(report_details.get('発生日時')).strftime('%Y年%m月%d日 %H時%M分') if pd.notna(report_details.get('発生日時')) else '-'), unsafe_allow_html=True)
+                st.markdown(detail_item_html("発生日時", pd.to_datetime(report_details.get('発生日時')).strftime('%Y年%m月%d日 %H:%M') if pd.notna(report_details.get('発生日時')) else '-'), unsafe_allow_html=True)
             with summary_cols[2]:
                 st.markdown(detail_item_html("報告者", report_details.get('報告者', '-')), unsafe_allow_html=True)
             
-            # --- 基本情報 ---
-            st.markdown(section_header("基本情報"), unsafe_allow_html=True)
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(detail_item_html("発生場所", report_details.get('発生場所', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("職種", report_details.get('職種', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("経験年数", report_details.get('経験年数', '-')), unsafe_allow_html=True)
+            # --- 患者情報 ---
+            st.markdown(section_header("患者情報"), unsafe_allow_html=True)
+            p1, p2 = st.columns(2)
+            with p1:
                 st.markdown(detail_item_html("患者ID", report_details.get('患者ID', '-')), unsafe_allow_html=True)
-            with c2:
-                created_at_val = report_details.get('報告日時')
-                created_at_str = pd.to_datetime(created_at_val).strftime('%Y年%m月%d日 %H時%M分') if pd.notna(created_at_val) else '-'
-                st.markdown(detail_item_html("報告日時", created_at_str), unsafe_allow_html=True)
-                st.markdown(detail_item_html("事故との関連性", report_details.get('事故との関連性', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("入職年数", report_details.get('入職年数', '-')), unsafe_allow_html=True)
+                st.markdown(detail_item_html("性別", report_details.get('性別', '-')), unsafe_allow_html=True)
+                st.markdown(detail_item_html("認知症の有無", report_details.get('認知症の有無', '-')), unsafe_allow_html=True)
+            with p2:
                 st.markdown(detail_item_html("患者氏名", report_details.get('患者氏名', '-') or '-'), unsafe_allow_html=True)
+                st.markdown(detail_item_html("年齢", str(int(report_details.get('年齢', 0))) + ' 歳' if pd.notna(report_details.get('年齢')) else '-'), unsafe_allow_html=True)
 
-            # --- インシデント詳細 ---
-            st.markdown(section_header("インシデント詳細"), unsafe_allow_html=True)
+            # --- インシデント分析 ---
+            st.markdown(section_header("インシデント分析"), unsafe_allow_html=True)
+            st.markdown(detail_item_html("発生場所", report_details.get('発生場所', '-')), unsafe_allow_html=True)
             st.markdown(detail_item_html("内容分類", report_details.get('内容分類', '-')), unsafe_allow_html=True)
             st.markdown(detail_block_html("インシデント内容", report_details.get('インシデント内容', '-')), unsafe_allow_html=True)
-
-            # --- 状況と対策 ---
-            st.markdown(section_header("状況と対策"), unsafe_allow_html=True)
             st.markdown(detail_block_html("状況詳細", report_details.get('状況詳細', '-')), unsafe_allow_html=True)
             st.markdown(detail_block_html("今後の対策", report_details.get('今後の対策', '-')), unsafe_allow_html=True)
 
-            # --- 原因分析とマニュアル関連 ---
-            st.markdown(section_header("原因分析とマニュアル関連"), unsafe_allow_html=True)
+            # --- 報告者情報と経緯 ---
+            st.markdown(section_header("報告者情報と経緯"), unsafe_allow_html=True)
+            r1, r2 = st.columns(2)
+            with r1:
+                st.markdown(detail_item_html("職種", report_details.get('職種', '-')), unsafe_allow_html=True)
+                st.markdown(detail_item_html("経験年数", report_details.get('経験年数', '-')), unsafe_allow_html=True)
+                st.markdown(detail_item_html("事故との関連性", report_details.get('事故との関連性', '-')), unsafe_allow_html=True)
+            with r2:
+                created_at_val = report_details.get('報告日時')
+                created_at_str = pd.to_datetime(created_at_val).strftime('%Y年%m月%d日 %H:%M') if pd.notna(created_at_val) else '-'
+                st.markdown(detail_item_html("報告日時", created_at_str), unsafe_allow_html=True)
+                st.markdown(detail_item_html("入職年数", report_details.get('入職年数', '-')), unsafe_allow_html=True)
+
+            # --- 状態変化と説明 ---
+            st.markdown(section_header("状態変化と説明"), unsafe_allow_html=True)
+            e1, e2, e3 = st.columns(3)
+            with e1:
+                st.markdown(detail_item_html("患者の状態変化", report_details.get('患者状態変化', '-')), unsafe_allow_html=True)
+            with e2:
+                st.markdown(detail_item_html("患者への説明", report_details.get('患者への説明', '-')), unsafe_allow_html=True)
+            with e3:
+                st.markdown(detail_item_html("家族への説明", report_details.get('家族への説明', '-')), unsafe_allow_html=True)
+
+            # --- 原因分析とマニュアル ---
+            st.markdown(section_header("原因分析とマニュアル"), unsafe_allow_html=True)
             def format_cause_details(cause_details_str):
-                if not cause_details_str or cause_details_str == '-':
-                    return '-'
-                
+                if not cause_details_str or cause_details_str == '-': return '-'
                 formatted_html = ""
-                categories = cause_details_str.split(' | ')
-                for category_item in categories:
+                for category_item in cause_details_str.split(' | '):
                     if ': ' in category_item:
                         category_name, items_str = category_item.split(': ', 1)
-                        formatted_html += f"<b>{category_name}:</b><br>"
-                        items = items_str.split(', ')
-                        for item in items:
-                            formatted_html += f"&nbsp;&nbsp;- {item}<br>"
-                    else:
-                        formatted_html += f"&nbsp;&nbsp;- {category_item}<br>" # Fallback for unexpected format
+                        formatted_html += f"<div style='margin-bottom: 5px;'><b>{category_name}:</b><ul style='margin: 0; padding-left: 20px;'>"
+                        for item in items_str.split(', '):
+                            formatted_html += f"<li>{item}</li>"
+                        formatted_html += "</ul></div>"
                 return formatted_html
-
             st.markdown(detail_block_html("発生原因", format_cause_details(report_details.get('発生原因', '-'))), unsafe_allow_html=True)
             st.markdown(detail_item_html("マニュアル関連", report_details.get('マニュアル関連', '-')), unsafe_allow_html=True)
 
-            st.markdown("</div>", unsafe_allow_html=True) # レポート全体のコンテナを閉じる
+            st.markdown("</div>", unsafe_allow_html=True)
 
         else:
             st.session_state.selected_report_id = None
