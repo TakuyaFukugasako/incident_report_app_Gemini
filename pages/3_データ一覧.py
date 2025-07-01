@@ -1,8 +1,13 @@
 import streamlit as st
 import pandas as pd
-from db_utils import get_all_reports
+from db_utils import get_all_reports, update_report_status
+import datetime
 
-st.set_page_config(page_title="検索・一覧", page_icon="🔍")
+# --- 認証チェック ---
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.switch_page("pages/0_Login.py")
+
+st.set_page_config(page_title="検索・一覧", page_icon="🔍", layout="wide")
 
 st.title(" 報告データの検索・一覧")
 st.markdown("---")
@@ -40,7 +45,13 @@ else:
         'manual_relation': 'マニュアル関連',
         'situation': '状況詳細',
         'countermeasure': '今後の対策',
-        'created_at': '報告日時'
+        'created_at': '報告日時',
+        'status': 'ステータス',
+        'approver1': '承認者1',
+        'approved_at1': '承認日時1',
+        'approver2': '承認者2',
+        'approved_at2': '承認日時2',
+        'manager_comments': '管理者コメント'
     }, inplace=True)
     
     st.header("データ検索")
@@ -88,16 +99,10 @@ else:
 
     # --- フォーム送信時の処理 ---
     if search_button:
-        # 入力された値をセッションステートに保存
         st.session_state.search_criteria = {
-            'start_date': start_date,
-            'end_date': end_date,
-            'reporter_name': reporter_name,
-            'locations': locations,
-            'levels': levels,
-            'job_types': job_types,
-            'content_categories': content_categories,
-            'content_details': content_details,
+            'start_date': start_date, 'end_date': end_date,
+            'reporter_name': reporter_name, 'locations': locations, 'levels': levels,
+            'job_types': job_types, 'content_categories': content_categories, 'content_details': content_details,
             'keyword': keyword
         }
     if clear_button:
@@ -107,7 +112,6 @@ else:
     # --- 検索ロジック ---
     filtered_df = df.copy()
     criteria = st.session_state.search_criteria
-
     if criteria.get('start_date') and criteria.get('end_date'):
         start_datetime = pd.to_datetime(criteria['start_date'])
         end_datetime = pd.to_datetime(criteria['end_date']) + pd.Timedelta(days=1)
@@ -131,30 +135,28 @@ else:
     st.header("検索結果")
     st.write(f"該当件数: {len(filtered_df)} 件")
 
-    # --- セッションステートの初期化 ---
     if 'selected_report_id' not in st.session_state:
         st.session_state.selected_report_id = None
 
-    # --- 検索結果をPandas風テーブルで表示 ---
-    # ヘッダー
-    header_cols = st.columns([3, 1, 2, 3, 3, 1, 1])
-    headers = ["発生日時", "職種", "発生場所", "内容分類", "報告者", "Lv.", "-"]
+    # --- 検索結果をテーブル表示 ---
+    header_cols = st.columns([1, 3, 1, 2, 3, 3, 1, 1])
+    headers = ["ステータス", "発生日時", "職種", "発生場所", "内容分類", "報告者", "Lv.", ""]
     for col, header in zip(header_cols, headers):
         col.markdown(f"**{header}**")
     st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
 
-    # データ行
     for _, report in filtered_df.iterrows():
-        data_cols = st.columns([3, 1, 2, 3, 3, 1, 1])
-        data_cols[0].write(report['発生日時'].strftime('%Y-%m-%d %H:%M'))
-        data_cols[1].write(report.get('職種', '-'))
-        data_cols[2].write(report.get('発生場所', '-'))
-        data_cols[3].write(report.get('内容分類', '-'))
-        data_cols[4].write(report.get('報告者', '-'))
-        data_cols[5].write(report.get('影響度レベル', '-'))
-        
-        button_placeholder = data_cols[6].empty()
-        if button_placeholder.button("詳細", key=f"detail_btn_{report['報告ID']}", use_container_width=True):
+        data_cols = st.columns([1, 3, 1, 2, 3, 3, 1, 1])
+        status = report.get('ステータス', '-')
+        status_color = {"未読": "#e74c3c", "承認中(1/2)": "#f39c12", "承認済み": "#2ecc71"}.get(status, "#7f8c8d")
+        data_cols[0].markdown(f"<span style='color: {status_color};'>●</span> {status}", unsafe_allow_html=True)
+        data_cols[1].write(report['発生日時'].strftime('%Y-%m-%d %H:%M'))
+        data_cols[2].write(report.get('職種', '-'))
+        data_cols[3].write(report.get('発生場所', '-'))
+        data_cols[4].write(report.get('内容分類', '-'))
+        data_cols[5].write(report.get('報告者', '-'))
+        data_cols[6].write(report.get('影響度レベル', '-'))
+        if data_cols[7].button("詳細", key=f"detail_btn_{report['報告ID']}", use_container_width=True):
             st.session_state.selected_report_id = report['報告ID']
             st.rerun()
         st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
@@ -169,51 +171,35 @@ else:
         if not selected_report_details.empty:
             report_details = selected_report_details.iloc[0]
 
-            # レポート全体のコンテナ
-            st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 8px; padding: 30px; background-color: #ffffff; box-shadow: 0 6px 12px rgba(0,0,0,0.08);'>", unsafe_allow_html=True)
+            
 
-            # --- 閉じるボタン ---
-            close_col, _ = st.columns([1, 5])
-            with close_col:
-                if st.button("✖️ 閉じる", key="close_detail_view", use_container_width=True):
-                    st.session_state.selected_report_id = None
-                    st.rerun()
+            if st.button("✖️ 閉じる", key="close_detail_view"):
+                st.session_state.selected_report_id = None
+                st.rerun()
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # --- スタイリングのためのHTMLヘルパー関数 ---
-            def section_header(title):
-                return f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 35px; margin-bottom: 20px; font-weight: 600; letter-spacing: 0.5px;'>{title}</h3>"
-
-            def detail_item_html(label, value, highlight=False):
+            def section_header(title): return f"<h3 style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; color: #1a5276; border-bottom: 2px solid #aed6f1; padding-bottom: 10px; margin-top: 30px; margin-bottom: 20px; font-weight: bold;'>{title}</h3>"
+            def detail_item_html(label, value, highlight=False): 
                 value_style = "font-weight: bold; color: #c0392b;" if highlight else ""
-                return f"<div style='margin-bottom: 12px; font-size: 16px; color: #34495e;'><b style='color: #2c3e50; margin-right: 5px;'>{label}:</b> <span style='{value_style}'>{value}</span></div>"
-
-            def detail_block_html(label, value):
+                return f"<div style='margin-bottom: 12px; font-size: 16px;'><b style='color: #566573; min-width: 120px; display: inline-block;'>{label}:</b> <span style='{value_style}'>{value}</span></div>"
+            def detail_block_html(label, value): 
                 escaped_value = str(value).replace('\n', '<br>')
-                return f"<div style='margin-bottom: 20px;'><b style='display: block; margin-bottom: 8px; color: #2c3e50; font-size: 16px;'>{label}:</b><div style='padding: 18px; background-color: #fdfefe; border: 1px solid #e5e7e9; border-radius: 8px; line-height: 1.7; color: #34495e; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);'>{escaped_value if escaped_value else '-'}</div></div>"
+                return f"<div style='margin-bottom: 20px;'><b style='display: block; margin-bottom: 8px; color: #566573; font-size: 16px;'>{label}:</b><div style='padding: 18px; background-color: #fdfefe; border: 1px solid #e5e7e9; border-radius: 8px; line-height: 1.7; color: #34495e; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);'>{escaped_value if escaped_value else '-'}</div></div>"
 
-            # --- 概要サマリー ---
             st.markdown(section_header("概要"), unsafe_allow_html=True)
-            summary_cols = st.columns([2, 3, 2])
-            with summary_cols[0]:
-                st.markdown(detail_item_html("影響度レベル", report_details.get('影響度レベル', '-'), highlight=True), unsafe_allow_html=True)
-            with summary_cols[1]:
-                st.markdown(detail_item_html("発生日時", pd.to_datetime(report_details.get('発生日時')).strftime('%Y年%m月%d日 %H:%M') if pd.notna(report_details.get('発生日時')) else '-'), unsafe_allow_html=True)
-            with summary_cols[2]:
-                st.markdown(detail_item_html("報告者", report_details.get('報告者', '-')), unsafe_allow_html=True)
-            
-            # --- 患者情報 ---
+            s1, s2, s3 = st.columns([1, 2, 2])
+            s1.markdown(detail_item_html("影響度レベル", report_details.get('影響度レベル', '-'), highlight=True), unsafe_allow_html=True)
+            s2.markdown(detail_item_html("発生日時", pd.to_datetime(report_details.get('発生日時')).strftime('%Y年%m月%d日 %H:%M') if pd.notna(report_details.get('発生日時')) else '-'), unsafe_allow_html=True)
+            s3.markdown(detail_item_html("報告者", report_details.get('報告者', '-')), unsafe_allow_html=True)
+
             st.markdown(section_header("患者情報"), unsafe_allow_html=True)
             p1, p2 = st.columns(2)
-            with p1:
-                st.markdown(detail_item_html("患者ID", report_details.get('患者ID', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("性別", report_details.get('性別', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("認知症の有無", report_details.get('認知症の有無', '-')), unsafe_allow_html=True)
-            with p2:
-                st.markdown(detail_item_html("患者氏名", report_details.get('患者氏名', '-') or '-'), unsafe_allow_html=True)
-                st.markdown(detail_item_html("年齢", str(int(report_details.get('年齢', 0))) + ' 歳' if pd.notna(report_details.get('年齢')) else '-'), unsafe_allow_html=True)
+            p1.markdown(detail_item_html("患者ID", report_details.get('患者ID', '-')), unsafe_allow_html=True)
+            p2.markdown(detail_item_html("患者氏名", report_details.get('患者氏名', '-') or '-'), unsafe_allow_html=True)
+            p1.markdown(detail_item_html("性別", report_details.get('性別', '-')), unsafe_allow_html=True)
+            p2.markdown(detail_item_html("年齢", str(int(report_details.get('年齢', 0))) + ' 歳' if pd.notna(report_details.get('年齢')) else '-'), unsafe_allow_html=True)
+            p1.markdown(detail_item_html("認知症の有無", report_details.get('認知症の有無', '-')), unsafe_allow_html=True)
 
-            # --- インシデント分析 ---
             st.markdown(section_header("インシデント分析"), unsafe_allow_html=True)
             st.markdown(detail_item_html("発生場所", report_details.get('発生場所', '-')), unsafe_allow_html=True)
             st.markdown(detail_item_html("内容分類", report_details.get('内容分類', '-')), unsafe_allow_html=True)
@@ -221,62 +207,46 @@ else:
             st.markdown(detail_block_html("状況詳細", report_details.get('状況詳細', '-')), unsafe_allow_html=True)
             st.markdown(detail_block_html("今後の対策", report_details.get('今後の対策', '-')), unsafe_allow_html=True)
 
-            # --- 報告者情報と経緯 ---
             st.markdown(section_header("報告者情報と経緯"), unsafe_allow_html=True)
             r1, r2 = st.columns(2)
-            with r1:
-                st.markdown(detail_item_html("職種", report_details.get('職種', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("経験年数", report_details.get('経験年数', '-')), unsafe_allow_html=True)
-                st.markdown(detail_item_html("事故との関連性", report_details.get('事故との関連性', '-')), unsafe_allow_html=True)
-            with r2:
-                created_at_val = report_details.get('報告日時')
-                created_at_str = pd.to_datetime(created_at_val).strftime('%Y年%m月%d日 %H:%M') if pd.notna(created_at_val) else '-'
-                st.markdown(detail_item_html("報告日時", created_at_str), unsafe_allow_html=True)
-                st.markdown(detail_item_html("入職年数", report_details.get('入職年数', '-')), unsafe_allow_html=True)
+            r1.markdown(detail_item_html("職種", report_details.get('職種', '-')), unsafe_allow_html=True)
+            r2.markdown(detail_item_html("報告日時", pd.to_datetime(report_details.get('報告日時')).strftime('%Y年%m月%d日 %H:%M') if pd.notna(report_details.get('報告日時')) else '-'), unsafe_allow_html=True)
+            r1.markdown(detail_item_html("経験年数", report_details.get('経験年数', '-')), unsafe_allow_html=True)
+            r2.markdown(detail_item_html("入職年数", report_details.get('入職年数', '-')), unsafe_allow_html=True)
+            r1.markdown(detail_item_html("事故との関連性", report_details.get('事故との関連性', '-')), unsafe_allow_html=True)
 
-            # --- 状態変化と説明 ---
             st.markdown(section_header("状態変化と説明"), unsafe_allow_html=True)
             e1, e2, e3 = st.columns(3)
-            with e1:
-                st.markdown(detail_item_html("患者の状態変化", report_details.get('患者状態変化', '-')), unsafe_allow_html=True)
-            with e2:
-                st.markdown(detail_item_html("患者への説明", report_details.get('患者への説明', '-')), unsafe_allow_html=True)
-            with e3:
-                st.markdown(detail_item_html("家族への説明", report_details.get('家族への説明', '-')), unsafe_allow_html=True)
+            e1.markdown(detail_item_html("患者の状態変化", report_details.get('患者状態変化', '-')), unsafe_allow_html=True)
+            e2.markdown(detail_item_html("患者への説明", report_details.get('患者への説明', '-')), unsafe_allow_html=True)
+            e3.markdown(detail_item_html("家族への説明", report_details.get('家族への説明', '-')), unsafe_allow_html=True)
 
-            # --- 原因分析とマニュアル ---
             st.markdown(section_header("原因分析とマニュアル"), unsafe_allow_html=True)
             def format_cause_details(cause_details_str):
                 if not cause_details_str or cause_details_str == '-': return '-'
-                formatted_html = ""
-                for category_item in cause_details_str.split(' | '):
-                    if ': ' in category_item:
-                        category_name, items_str = category_item.split(': ', 1)
-                        formatted_html += f"<div style='margin-bottom: 5px;'><b>{category_name}:</b><ul style='margin: 0; padding-left: 20px;'>"
-                        for item in items_str.split(', '):
-                            formatted_html += f"<li>{item}</li>"
-                        formatted_html += "</ul></div>"
-                return formatted_html
+                html = ""
+                for cat_item in cause_details_str.split(' | '):
+                    if ': ' in cat_item:
+                        cat, items = cat_item.split(': ', 1)
+                        html += f"<div style='margin-bottom: 5px;'><b>{cat}:</b><ul style='margin: 0; padding-left: 20px;'>"
+                        for item in items.split(', '): html += f"<li>{item}</li>"
+                        html += "</ul></div>"
+                return html
             st.markdown(detail_block_html("発生原因", format_cause_details(report_details.get('発生原因', '-'))), unsafe_allow_html=True)
             st.markdown(detail_item_html("マニュアル関連", report_details.get('マニュアル関連', '-')), unsafe_allow_html=True)
+
+            # --- 承認ワークフロー ---
+            st.markdown(section_header("承認ワークフロー"), unsafe_allow_html=True)
+            wf1, wf2 = st.columns(2)
+            wf1.markdown(detail_item_html("ステータス", report_details.get('ステータス', '-'), highlight=True), unsafe_allow_html=True)
+            wf1.markdown(detail_item_html("承認者1", report_details.get('承認者1', '-')), unsafe_allow_html=True)
+            wf2.markdown(detail_item_html("承認日時1", pd.to_datetime(report_details.get('承認日時1')).strftime('%Y-%m-%d %H:%M') if pd.notna(report_details.get('承認日時1')) else '-'), unsafe_allow_html=True)
+            wf1.markdown(detail_item_html("承認者2", report_details.get('承認者2', '-')), unsafe_allow_html=True)
+            wf2.markdown(detail_item_html("承認日時2", pd.to_datetime(report_details.get('承認日時2')).strftime('%Y-%m-%d %H:%M') if pd.notna(report_details.get('承認日時2')) else '-'), unsafe_allow_html=True)
+            st.markdown(detail_block_html("管理者コメント", report_details.get('管理者コメント', '-')), unsafe_allow_html=True)
 
             st.markdown("</div>", unsafe_allow_html=True)
 
         else:
             st.session_state.selected_report_id = None
             st.rerun()
-
-
-    # --- CSVダウンロードボタンは最後に配置 ---
-    st.markdown("---")
-    @st.cache_data
-    def convert_df(df_to_convert):
-        return df_to_convert.to_csv(index=False).encode('utf-8-sig')
-
-    csv = convert_df(filtered_df)
-    st.download_button(
-        label="現在の検索結果をCSVでダウンロード",
-        data=csv,
-        file_name='filtered_incident_reports.csv',
-        mime='text/csv',
-    )

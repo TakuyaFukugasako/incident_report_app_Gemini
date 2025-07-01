@@ -3,7 +3,11 @@ import pandas as pd
 import plotly.express as px
 from db_utils import get_all_reports
 
-st.set_page_config(page_title="グラフ・分析", page_icon="📊")
+# --- 認証チェック ---
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.switch_page("pages/0_Login.py")
+
+st.set_page_config(page_title="グラフ・分析", page_icon="📊", layout="wide")
 
 st.title(" グラフ・分析ダッシュボード")
 st.markdown("---")

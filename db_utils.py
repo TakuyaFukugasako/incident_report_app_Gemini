@@ -3,6 +3,8 @@ import sqlite3
 import pandas as pd
 import datetime
 import json
+import bcrypt # bcryptライブラリをインポート
+import os # 環境変数を読み込むためにosモジュールをインポート
 
 DB_NAME = "incident_reports.db"
 
@@ -13,14 +15,13 @@ def get_db_connection():
 def init_db():
     """
     データベースとテーブルを初期化します。
-    reportsテーブルとdraftsテーブルがなければ作成します。
+    reportsテーブルとdraftsテーブル、usersテーブルがなければ作成します。
     既存のreportsテーブルにカラムが不足している場合は追加します。
     """
     with get_db_connection() as conn:
         cursor = conn.cursor()
         # --- インシデント報告テーブル ---
-        # 最新のスキーマでテーブル作成を試みる
-        cursor.execute("""
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS reports (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 occurrence_datetime DATETIME NOT NULL,
@@ -45,17 +46,32 @@ def init_db():
                 manual_relation TEXT,
                 situation TEXT NOT NULL,
                 countermeasure TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT,
+                approver1 TEXT,
+                approved_at1 DATETIME,
+                approver2 TEXT,
+                approved_at2 DATETIME,
+                manager_comments TEXT
+            )
+        ''')
+
+        # --- usersテーブル ---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        ''')
 
-        # --- テーブルスキーマのマイグレーション ---
-        # reportsテーブルのカラム情報を取得し、不足分を追加
+        # --- テーブルスキーマのマイグレーション (reportsテーブル) ---
         cursor.execute("PRAGMA table_info(reports)")
         columns = [row[1] for row in cursor.fetchall()]
 
-        # あるべきカラムを辞書で定義
-        expected_columns = {
+        expected_columns_reports = {
             "years_of_experience": "TEXT",
             "years_since_joining": "TEXT",
             "patient_gender": "TEXT",
@@ -63,44 +79,142 @@ def init_db():
             "dementia_status": "TEXT",
             "patient_status_change_accident": "TEXT",
             "patient_status_change_patient_explanation": "TEXT",
-            "patient_status_change_family_explanation": "TEXT"
+            "patient_status_change_family_explanation": "TEXT",
+            "status": "TEXT",
+            "approver1": "TEXT",
+            "approved_at1": "DATETIME",
+            "approver2": "TEXT",
+            "approved_at2": "DATETIME",
+            "manager_comments": "TEXT"
         }
 
-        for col_name, col_type in expected_columns.items():
+        for col_name, col_type in expected_columns_reports.items():
             if col_name not in columns:
                 cursor.execute(f"ALTER TABLE reports ADD COLUMN {col_name} {col_type}")
 
+        # --- 初回管理者アカウントの自動作成 ---
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = cursor.fetchone()[0]
+
+        if user_count == 0:
+            admin_username = os.environ.get('ADMIN_USERNAME')
+            admin_password = os.environ.get('ADMIN_PASSWORD')
+
+            if admin_username and admin_password:
+                hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                               (admin_username, hashed_password, 'admin'))
+                conn.commit()
+                print(f"初回管理者アカウント '{admin_username}' を作成しました。")
+            else:
+                print("環境変数 ADMIN_USERNAME および ADMIN_PASSWORD が設定されていないため、初回管理者アカウントは作成されませんでした。")
+                print("手動でユーザーを登録するか、環境変数を設定してアプリを再起動してください。")
+
         # --- 下書きテーブル ---
-        cursor.execute("""
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS drafts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT,
                 data_json TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        ''')
         conn.commit()
+
+# --- ユーザー関連 ---
+
+def add_user(username, password, role='general'):
+    """新しいユーザーをデータベースに追加します。パスワードはハッシュ化されます。"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        try:
+            cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                           (username, hashed_password, role))
+            conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            # usernameがUNIQUE制約に違反した場合（既に存在する）
+            return False
+
+def get_user_by_username(username):
+    """ユーザー名でユーザー情報を取得します。"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, password_hash, role FROM users WHERE username = ?", (username,))
+        user_data = cursor.fetchone()
+        if user_data:
+            return {"id": user_data[0], "username": user_data[1], "password_hash": user_data[2], "role": user_data[3]}
+        return None
+
+def verify_password(plain_password, hashed_password):
+    """平文パスワードとハッシュ化されたパスワードを比較して検証します。"""
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # --- レポート関連 ---
 
 def add_report(data: dict):
-    """インシデント報告をデータベースに追加します"""
+    """インシデント報告をデータベースに追加し、ステータスを'未読'に設定します"""
+    data['status'] = '未読' # ★ ステータスを初期設定
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        # 辞書のキーと値からSQL文を生成
         columns = ', '.join(data.keys())
         placeholders = ', '.join(['?'] * len(data))
         sql = f"INSERT INTO reports ({columns}) VALUES ({placeholders})"
         cursor.execute(sql, tuple(data.values()))
         conn.commit()
 
-# st.cache_data を使うことで、引数が変わらない限りDBアクセスをスキップできる
+def update_report_status(report_id: int, updates: dict):
+    """指定されたIDのレポートのステータスや承認者情報を更新します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        set_clauses = [f"{key} = ?" for key in updates.keys()]
+        sql = f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = ?"
+        
+        values = list(updates.values())
+        values.append(report_id)
+        
+        cursor.execute(sql, tuple(values))
+        conn.commit()
+
 def get_all_reports():
     """全てのインシデント報告を取得します"""
     with get_db_connection() as conn:
         # index_col='id' を指定すると、DataFrameのインデックスがid列になる
         df = pd.read_sql("SELECT * FROM reports ORDER BY occurrence_datetime DESC", conn, index_col='id')
         return df
+
+# --- ユーザー管理関連 ---
+
+def get_all_users():
+    """全てのユーザー情報を取得します（パスワードハッシュは含まない）"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY username")
+        users_data = cursor.fetchall()
+        return [{'id': row[0], 'username': row[1], 'role': row[2], 'created_at': row[3]} for row in users_data]
+
+def update_user_role(user_id, new_role):
+    """ユーザーのロールを更新します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
+        conn.commit()
+
+def update_user_password(user_id, new_password):
+    """ユーザーのパスワードをリセットします（ハッシュ化して保存）"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_password, user_id))
+        conn.commit()
+
+def delete_user(user_id):
+    """ユーザーを削除します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
 
 # --- 下書き関連 ---
 
