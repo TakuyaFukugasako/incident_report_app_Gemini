@@ -31,6 +31,12 @@ defaults = {
     'years_since_joining': "1年未満",
     'patient_ID': "",
     'patient_name': "",
+    'patient_gender': "",
+    'patient_age': None,
+    'dementia_status': "",
+    'patient_status_change_accident': "無",
+    'patient_status_change_patient_explanation': "無",
+    'patient_status_change_family_explanation': "無",
     'location': "1FMRI室",
     'situation': "",
     'countermeasure': "",
@@ -103,7 +109,46 @@ with st.form(key='report_form', clear_on_submit=False): # clear_on_submitをFals
     level = st.selectbox("影響度レベル", level_options, key='level')
     
     with st.expander("レベル定義の確認"):
-        st.info("インシデントレベルの定義表が表示されます。") # expanderの中身は簡略化のため省略
+        st.subheader("インシデント")
+        incident_df = pd.DataFrame({
+            'レベル': ['0', '1', '2'],
+            '説明': [
+                "間違ったことが実施される前に気づいた場合。",
+                "間違ったことが実施されたが、患者様かつ職員には影響・変化がなかった場合。",
+                "間違ったことが実施されたが、患者様かつ職員に処置や治療を行う必要はなかった。（患者観察の強化など）"
+            ]
+        }).set_index('レベル')
+        st.dataframe(
+            incident_df,
+            use_container_width=True, # テーブルをコンテナの幅いっぱいに広げる
+            column_config={
+                "説明": st.column_config.TextColumn(
+                    "説明", # ヘッダー名
+                    width="large", # 列の幅を "small", "medium", "large" から選べる
+                )
+            }
+        )
+
+        st.subheader("アクシデント")
+        accident_df = pd.DataFrame({
+            'レベル': ['3a', '3b', '4', '5'],
+            '説明': [
+                "事故により、簡単な処置や治療を要した。（消毒、湿布、鎮痛剤の投与など）",
+                "事故により、濃厚な処置や治療を要した。（骨折、手術、入院日数の延長など）",
+                "事故により、永続的な障害や後遺症が残った。",
+                "事故が死因になった。"
+            ]
+        }).set_index('レベル')
+        st.dataframe(
+            accident_df,
+            use_container_width=True,
+            column_config={
+                "説明": st.column_config.TextColumn("説明", width="large")
+            }
+        )
+
+        st.subheader("その他")
+        st.markdown("- 盗難、自殺、災害、クレーム、発注ミス、個人情報流出、針刺し事故など")
 
     st.markdown("--- ")
     col1, col2 = st.columns(2)
@@ -134,14 +179,46 @@ with st.form(key='report_form', clear_on_submit=False): # clear_on_submitをFals
         
     with col2:
         st.write("**患者情報**")
-        patient_col1, patient_col2 = st.columns([1, 2])
-        with patient_col1:
+        # First row: Patient ID and Patient Name
+        patient_id_col, patient_name_col = st.columns([1, 2])
+        with patient_id_col:
             st.text_input("患者ID", key="patient_ID", placeholder="IDを入力", label_visibility="collapsed")
-        with patient_col2:
+        with patient_name_col:
             st.text_input("患者氏名", key="patient_name", placeholder="氏名を入力", label_visibility="collapsed")
+
+        # Second row: Gender (1 column), Age (1 column), Dementia Status (2 columns)
+        gender_col, age_col, dementia_col = st.columns([1, 1, 2])
+        with gender_col:
+            st.write("**性別**")
+            st.selectbox("性別", ["", "男性", "女性", "その他"], key="patient_gender", label_visibility="collapsed")
+        with age_col:
+            st.write("**年齢**")
+            st.number_input("年齢", min_value=0, max_value=150, key="patient_age", label_visibility="collapsed")
+        with dementia_col:
+            st.write("**認知症の有無**")
+            st.selectbox("認知症の有無", ["", "あり", "なし", "不明"], key="dementia_status", label_visibility="collapsed")
         
         st.write("**発生場所**")
         st.selectbox("発生場所", ["1FMRI室", "1F操作室", "1F撮影室", "1Fエコー室", "1F廊下", "1Fトイレ", "2F受付", "2F待合", "2F診察室", "2F処置室", "2Fトイレ", "3Fリハビリ室", "3F受付", "3F待合","3Fトイレ", "4Fリハビリ室", "4F受付", "4F待合","4Fトイレ"], key="location", label_visibility="collapsed")
+
+        st.write("**状態変化・説明**")
+        col_change, col_change_radio = st.columns([3, 1])
+        with col_change:
+            st.write("事故などによる患者の状態変化")
+        with col_change_radio:
+            st.radio("", ["有", "無"], key="patient_status_change_accident", horizontal=True, label_visibility="collapsed")
+
+        col_patient, col_patient_radio = st.columns([3, 1])
+        with col_patient:
+            st.write("患者への説明")
+        with col_patient_radio:
+            st.radio("", ["有", "無"], key="patient_status_change_patient_explanation", horizontal=True, label_visibility="collapsed")
+
+        col_family, col_family_radio = st.columns([3, 1])
+        with col_family:
+            st.write("家族への説明")
+        with col_family_radio:
+            st.radio("", ["有", "無"], key="patient_status_change_family_explanation", horizontal=True, label_visibility="collapsed")
 
     st.markdown("--- ")
     st.subheader("状況と対策")
@@ -247,6 +324,12 @@ if submit_button:
             "years_since_joining": st.session_state.years_since_joining,
             "patient_ID": st.session_state.patient_ID,
             "patient_name": st.session_state.patient_name,
+            "patient_gender": st.session_state.patient_gender,
+            "patient_age": st.session_state.patient_age,
+            "dementia_status": st.session_state.dementia_status,
+            "patient_status_change_accident": st.session_state.patient_status_change_accident,
+            "patient_status_change_patient_explanation": st.session_state.patient_status_change_patient_explanation,
+            "patient_status_change_family_explanation": st.session_state.patient_status_change_family_explanation,
             "content_category": st.session_state.content_category,
             "content_details": content_details_str,
             "cause_details": cause_summary_str,

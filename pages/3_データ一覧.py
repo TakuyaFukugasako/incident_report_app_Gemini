@@ -26,8 +26,14 @@ else:
         'connection_with_accident': '事故との関連性',
         'years_of_experience': '経験年数',
         'years_since_joining': '入職年数',
-        'patient_ID': '患者ID', # ← 追加
-        'patient_name': '患者氏名', # ← 追加
+        'patient_ID': '患者ID',
+        'patient_name': '患者氏名',
+        'patient_gender': '性別',
+        'patient_age': '年齢',
+        'dementia_status': '認知症の有無',
+        'patient_status_change_accident': '患者状態変化',
+        'patient_status_change_patient_explanation': '患者説明',
+        'patient_status_change_family_explanation': '家族説明',
         'content_category': '内容分類',
         'content_details': 'インシデント内容',
         'cause_details': '発生原因',
@@ -164,7 +170,7 @@ else:
             report_details = selected_report_details.iloc[0]
 
             # レポート全体のコンテナ
-            st.markdown("<div style='border: 1px solid #e0e0e0; border-radius: 8px; padding: 25px; background-color: #ffffff; box-shadow: 0 4px 8px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
+            st.markdown("<div style='border: 1px solid #dcdcdc; border-radius: 12px; padding: 30px; background-color: #ffffff; box-shadow: 0 8px 20px rgba(0,0,0,0.08);'>", unsafe_allow_html=True)
 
             # --- 閉じるボタン ---
             close_col, _ = st.columns([1, 5])
@@ -176,18 +182,18 @@ else:
 
             # --- スタイリングのためのHTMLヘルパー関数 ---
             def section_header(title):
-                return f"<h4 style='border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; color: #34495e;'>{title}</h4>"
+                return f"<h3 style='font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 35px; margin-bottom: 20px; font-weight: 600; letter-spacing: 0.5px;'>{title}</h3>"
 
             def detail_item_html(label, value):
-                return f"<div style='margin-bottom: 10px;'><b>{label}:</b> {value}</div>"
+                return f"<div style='margin-bottom: 12px; font-size: 16px; color: #34495e;'><b style='color: #2c3e50; margin-right: 5px;'>{label}:</b> {value}</div>"
 
             def detail_block_html(label, value):
                 escaped_value = str(value).replace('\n', '<br>')
-                return f"<div style='margin-bottom: 15px;'><b style='display: block; margin-bottom: 5px; color: #34495e;'>{label}:</b><div style='padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; line-height: 1.6; color: #333;'>{escaped_value if escaped_value else '-'}</div></div>"
+                return f"<div style='margin-bottom: 20px;'><b style='display: block; margin-bottom: 8px; color: #2c3e50; font-size: 16px;'>{label}:</b><div style='padding: 18px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; line-height: 1.7; color: #333; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);'>{escaped_value if escaped_value else '-'}</div></div>"
 
             # --- 概要サマリー --- (上司向け)
             st.markdown(section_header("概要"), unsafe_allow_html=True)
-            summary_cols = st.columns(3)
+            summary_cols = st.columns([2, 3, 2])
             with summary_cols[0]:
                 st.markdown(detail_item_html("影響度レベル", report_details.get('影響度レベル', '-')), unsafe_allow_html=True)
             with summary_cols[1]:
@@ -223,7 +229,24 @@ else:
 
             # --- 原因分析とマニュアル関連 ---
             st.markdown(section_header("原因分析とマニュアル関連"), unsafe_allow_html=True)
-            st.markdown(detail_block_html("発生原因", report_details.get('発生原因', '-')), unsafe_allow_html=True)
+            def format_cause_details(cause_details_str):
+                if not cause_details_str or cause_details_str == '-':
+                    return '-'
+                
+                formatted_html = ""
+                categories = cause_details_str.split(' | ')
+                for category_item in categories:
+                    if ': ' in category_item:
+                        category_name, items_str = category_item.split(': ', 1)
+                        formatted_html += f"<b>{category_name}:</b><br>"
+                        items = items_str.split(', ')
+                        for item in items:
+                            formatted_html += f"&nbsp;&nbsp;- {item}<br>"
+                    else:
+                        formatted_html += f"&nbsp;&nbsp;- {category_item}<br>" # Fallback for unexpected format
+                return formatted_html
+
+            st.markdown(detail_block_html("発生原因", format_cause_details(report_details.get('発生原因', '-'))), unsafe_allow_html=True)
             st.markdown(detail_item_html("マニュアル関連", report_details.get('マニュアル関連', '-')), unsafe_allow_html=True)
 
             st.markdown("</div>", unsafe_allow_html=True) # レポート全体のコンテナを閉じる
