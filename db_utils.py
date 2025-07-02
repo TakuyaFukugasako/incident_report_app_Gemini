@@ -94,7 +94,16 @@ def init_db():
             "approved_at1": "DATETIME",
             "approver2": "TEXT",
             "approved_at2": "DATETIME",
-            "manager_comments": "TEXT"
+            "manager_comments": "TEXT",
+            "content_details_shinsatsu": "TEXT",
+            "content_details_shochi": "TEXT",
+            "content_details_uketsuke": "TEXT",
+            "content_details_houshasen": "TEXT",
+            "content_details_rehabili": "TEXT",
+            "content_details_kanjataio": "TEXT",
+            "content_details_buhin": "TEXT",
+            "injury_details": "TEXT",
+            "injury_other_text": "TEXT"
         }
 
         for col_name, col_type in expected_columns_reports.items():

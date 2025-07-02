@@ -4,8 +4,8 @@ from db_utils import get_all_reports, update_report_status
 import datetime
 
 # --- 認証チェック ---
-if "logged_in" not in st.session_state or not st.session_state.logged_in:
-    st.switch_page("pages/0_Login.py")
+# if "logged_in" not in st.session_state or not st.session_state.logged_in:
+#     st.switch_page("pages/0_Login.py")
 
 st.set_page_config(page_title="検索・一覧", page_icon="🔍")
 
@@ -190,15 +190,15 @@ else:
             def section_header(title): return f"<h3 style='font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; color: #1a5276; border-bottom: 2px solid #aed6f1; padding-bottom: 10px; margin-top: 30px; margin-bottom: 20px; font-weight: bold;'>{title}</h3>"
             def detail_item_html(label, value, highlight=False): 
                 value_style = "font-weight: bold; color: #c0392b;" if highlight else ""
-                return f"<div style='margin-bottom: 12px; font-size: 16px;'><b style='color: #566573; min-width: 120px; display: inline-block;'>{label}:</b> <span style='{value_style}'>{value}</span></div>"
+                return f"<div style='margin-bottom: 14px; font-size: 18px;'><b style='color: #566573; min-width: 120px; display: inline-block;'>{label}：</b> <span style='{value_style}'>{value}</span></div>"
             def detail_block_html(label, value): 
                 escaped_value = str(value).replace('\n', '<br>')
-                return f"<div style='margin-bottom: 20px;'><b style='display: block; margin-bottom: 8px; color: #566573; font-size: 16px;'>{label}:</b><div style='padding: 18px; background-color: #fdfefe; border: 1px solid #e5e7e9; border-radius: 8px; line-height: 1.7; color: #34495e; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);'>{escaped_value if escaped_value else '-'}</div></div>"
+                return f"<div style='margin-bottom: 22px;'><b style='display: block; margin-bottom: 8px; color: #566573; font-size: 17px;'>{label}：</b><div style='padding: 18px; background-color: #fdfefe; border: 1px solid #e5e7e9; border-radius: 8px; line-height: 1.7; color: #34495e; font-size: 16px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);'>{escaped_value if escaped_value else '-'}</div></div>"
 
             st.markdown(section_header("概要"), unsafe_allow_html=True)
             s1, s2, s3 = st.columns([1, 2, 2])
             s1.markdown(detail_item_html("影響度レベル", report_details.get('影響度レベル', '-'), highlight=True), unsafe_allow_html=True)
-            s2.markdown(detail_item_html("発生日時", pd.to_datetime(report_details.get('発生日時')).strftime('%Y年%m月%d日 %H:%M') if pd.notna(report_details.get('発生日時')) else '-'), unsafe_allow_html=True)
+            s2.markdown(detail_item_html("発生日時", pd.to_datetime(report_details.get('発生日時')).strftime('%Y年%m月%d日 %H時%M分') if pd.notna(report_details.get('発生日時')) else '-'), unsafe_allow_html=True)
             s3.markdown(detail_item_html("報告者", report_details.get('報告者', '-')), unsafe_allow_html=True)
 
             st.markdown(section_header("患者情報"), unsafe_allow_html=True)
@@ -246,9 +246,35 @@ else:
 
             st.markdown(section_header("状態変化と説明"), unsafe_allow_html=True)
             e1, e2, e3 = st.columns(3)
-            e1.markdown(detail_item_html("患者の状態変化", report_details.get('患者状態変化', '-')), unsafe_allow_html=True)
-            e2.markdown(detail_item_html("患者への説明", report_details.get('患者への説明', '-')), unsafe_allow_html=True)
-            e3.markdown(detail_item_html("家族への説明", report_details.get('家族への説明', '-')), unsafe_allow_html=True)
+            e1.markdown(detail_item_html("患者の状態変化", report_details.get('患者状態変化', '-'), highlight=report_details.get('患者状態変化') == '有'), unsafe_allow_html=True)
+            e2.markdown(detail_item_html("患者への説明", report_details.get('患者への説明', '-'), highlight=report_details.get('患者への説明') == '有'), unsafe_allow_html=True)
+            e3.markdown(detail_item_html("家族への説明", report_details.get('家族への説明', '-'), highlight=report_details.get('家族への説明') == '有'), unsafe_allow_html=True)
+
+            st.markdown(section_header("原因分析とマニュアル"), unsafe_allow_html=True)
+            def format_cause_details(cause_details_str):
+                if not cause_details_str or cause_details_str == '-': return '-'
+                html = ""
+                for cat_item in cause_details_str.split(' | '):
+                    if '： ' in cat_item: # ここも全角コロンに
+                        cat, items = cat_item.split('： ', 1)
+                        html += f"<div style='margin-bottom: 5px;'><b>{cat}：</b><ul style='margin: 0; padding-left: 20px;'>"
+                        for item in items.split(', '): html += f"<li>{item}</li>"
+                        html += "</ul></div>"
+                    else:
+                        html += f"<li>{cat_item}</li>" # Fallback for unexpected format
+                return html
+            st.markdown(detail_block_html("発生原因", format_cause_details(report_details.get('発生原因', '-'))), unsafe_allow_html=True)
+            st.markdown(detail_item_html("マニュアル関連", report_details.get('マニュアル関連', '-')), unsafe_allow_html=True)
+
+            # --- 承認ワークフローの表示（アクションなし） ---
+            st.markdown(section_header("承認ワークフロー"), unsafe_allow_html=True)
+            wf1, wf2 = st.columns(2)
+            wf1.markdown(detail_item_html("ステータス", report_details.get('ステータス', '-'), highlight=True), unsafe_allow_html=True)
+            wf1.markdown(detail_item_html("承認者1", report_details.get('承認者1', '-')), unsafe_allow_html=True)
+            wf2.markdown(detail_item_html("承認日時1", pd.to_datetime(report_details.get('承認日時1')).strftime('%Y-%m-%d %H:%M') if pd.notna(report_details.get('承認日時1')) else '-'), unsafe_allow_html=True)
+            wf1.markdown(detail_item_html("承認者2", report_details.get('承認者2', '-')), unsafe_allow_html=True)
+            wf2.markdown(detail_item_html("承認日時2", pd.to_datetime(report_details.get('承認日時2')).strftime('%Y-%m-%d %H:%M') if pd.notna(report_details.get('承認日時2')) else '-'), unsafe_allow_html=True)
+            st.markdown(detail_block_html("管理者コメント", report_details.get('管理者コメント', '-')), unsafe_allow_html=True)
 
             st.markdown(section_header("原因分析とマニュアル"), unsafe_allow_html=True)
             def format_cause_details(cause_details_str):
