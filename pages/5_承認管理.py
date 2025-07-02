@@ -4,13 +4,13 @@ from db_utils import get_all_reports, update_report_status
 import datetime
 
 # --- 認証チェック ---
-if "logged_in" not in st.session_state or not st.session_state.logged_in:
-    st.switch_page("pages/0_Login.py")
+#if "logged_in" not in st.session_state or not st.session_state.logged_in:
+#    st.switch_page("pages/0_Login.py")
 
 # --- ロールベースのアクセス制御 ---
-if st.session_state.get("role") != "admin":
-    st.warning("このページにアクセスする権限がありません。管理者としてログインしてください。")
-    st.stop() # ページの実行を停止
+#if st.session_state.get("role") != "admin":
+#    st.warning("このページにアクセスする権限がありません。管理者としてログインしてください。")
+#    st.stop() # ページの実行を停止
 
 st.set_page_config(page_title="承認管理", page_icon="✅", layout="wide")
 

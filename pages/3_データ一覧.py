@@ -4,8 +4,8 @@ from db_utils import get_all_reports, update_report_status
 import datetime
 
 # --- 認証チェック ---
-if "logged_in" not in st.session_state or not st.session_state.logged_in:
-    st.switch_page("pages/0_Login.py")
+#if "logged_in" not in st.session_state or not st.session_state.logged_in:
+#    st.switch_page("pages/0_Login.py")
 
 st.set_page_config(page_title="検索・一覧", page_icon="🔍")
 

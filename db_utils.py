@@ -101,7 +101,8 @@ def init_db():
             "content_details_houshasen": "TEXT",
             "content_details_rehabili": "TEXT",
             "content_details_kanjataio": "TEXT",
-            "content_details_buhin": "TEXT",
+            "content_details_kiki": "TEXT",
+            "content_details_sonota": "TEXT",
             "injury_details": "TEXT",
             "injury_other_text": "TEXT"
         }
@@ -159,7 +160,7 @@ def add_report(data: dict):
     """インシデント報告をデータベースに追加し、ステータスを'未読'に設定します"""
     data['status'] = '未読' # ★ ステータスを初期設定
     # 新しい詳細項目をJSON文字列として保存
-    for key in ['content_details_shinsatsu', 'content_details_shochi', 'content_details_uketsuke', 'content_details_houshasen', 'content_details_rehabili', 'content_details_kanjataio', 'content_details_buhin', 'injury_details']:
+    for key in ['content_details_shinsatsu', 'content_details_shochi', 'content_details_uketsuke', 'content_details_houshasen', 'content_details_rehabili', 'content_details_kanjataio', 'content_details_kiki', 'content_details_sonota', 'injury_details']:
         if key in data and isinstance(data[key], list):
             data[key] = json.dumps(data[key], ensure_ascii=False)
     if 'injury_other_text' in data and data['injury_other_text'] is None:
