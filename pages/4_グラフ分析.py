@@ -4,12 +4,12 @@ import plotly.express as px
 from db_utils import get_all_reports
 
 # --- 認証チェック ---
-# if "logged_in" not in st.session_state or not st.session_state.logged_in:
-#     st.switch_page("pages/0_Login.py")
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.switch_page("pages/0_Login.py")
 
-st.set_page_config(page_title="グラフ・分析", page_icon="")
+st.set_page_config(page_title="グラフ・分析", page_icon="📊", layout="wide")
 
-st.title(" グラフ・分析ダッシュボード")
+st.title("📊 グラフ・分析ダッシュボード")
 st.markdown("---")
 
 df = get_all_reports()
@@ -25,30 +25,27 @@ else:
         'years_since_joining': '入職年数',
         'reporter_name': '報告者',
         'job_type': '職種',
-        'level': '影響度レベル',  # ←←← 'level' を '影響度レベル' に変更！
+        'level': '影響度レベル',
         'location': '発生場所',
         'connection_with_accident': '事故との関連性',
+        'content_category': '内容分類',
         'content_details': 'インシデント内容',
-        'content_details_shinsatsu': '診察詳細',
-        'content_details_shochi': '処置詳細',
-        'content_details_uketsuke': '受付詳細',
-        'content_details_houshasen': '放射線業務詳細',
-        'content_details_rehabili': 'リハビリ業務詳細',
-        'content_details_kanjataio': '患者対応詳細',
-        'content_details_buhin': '物品破損詳細',
-        'injury_details': '外傷詳細',
-        'injury_other_text': 'その他外傷',
         'cause_details': '発生原因',
         'manual_relation': 'マニュアル関連',
         'situation': '状況詳細',
         'countermeasure': '今後の対策',
-        'created_at': '報告日時'
+        'created_at': '報告日時',
+        'status': 'ステータス',
+        'approver1': '承認者1',
+        'approved_at1': '承認日時1',
+        'approver2': '承認者2',
+        'approved_at2': '承認日時2',
+        'manager_comments': '管理者コメント'
     }, inplace=True)
     
     level_order = ["0", "1", "2", "3a", "3b", "4", "5", "その他"]
     
     # '影響度レベル' 列を、定義した順序を持つ「カテゴリ型」に変換する
-    # これにより、この後の .sort_index() がこの定義通りの順番で動作するようになる
     try:
         df['影響度レベル'] = pd.Categorical(df['影響度レベル'], categories=level_order, ordered=True)
     except Exception as e:
@@ -57,38 +54,93 @@ else:
         
     st.header("インシデント傾向分析")
 
-    # 影響度レベルの円グラフ
-    st.subheader("影響度レベルの割合")
-    level_counts = df['影響度レベル'].value_counts()
-    fig_pie = px.pie(
-        level_counts, 
-        values=level_counts.values, 
-        names=level_counts.index, 
-        title='影響度レベル別'
-    )
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-    # 2列レイアウト
+    # --- 1行目: 影響度レベル円グラフと内容分類棒グラフ ---
     col1, col2 = st.columns(2)
 
     with col1:
-        # 発生場所ごとの棒グラフ
-        st.subheader("発生場所別 件数")
-        location_counts = df['発生場所'].value_counts()
-        st.bar_chart(location_counts)
+        st.subheader("影響度レベルの割合")
+        level_counts = df['影響度レベル'].value_counts().sort_index()
+        fig_pie_level = px.pie(
+            level_counts, 
+            values=level_counts.values, 
+            names=level_counts.index, 
+            title='影響度レベル別インシデント件数',
+            hole=0.3, # ドーナツグラフにする
+            color_discrete_sequence=px.colors.sequential.RdBu # 色のシーケンス
+        )
+        fig_pie_level.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig_pie_level, use_container_width=True)
 
     with col2:
-        # 職種ごとの棒グラフ
-        st.subheader("報告者の職種別 件数")
-        job_counts = df['職種'].value_counts()
-        st.bar_chart(job_counts)
+        st.subheader("内容分類別インシデント件数")
+        content_category_counts = df['内容分類'].value_counts().sort_index()
+        fig_bar_category = px.bar(
+            content_category_counts, 
+            x=content_category_counts.index, 
+            y=content_category_counts.values, 
+            title='内容分類別',
+            labels={'x':'内容分類', 'y':'件数'},
+            color_discrete_sequence=px.colors.qualitative.Pastel # 色のシーケンス
+        )
+        fig_bar_category.update_layout(xaxis_tickangle=-45) # X軸ラベルを斜めにする
+        st.plotly_chart(fig_bar_category, use_container_width=True)
 
-    # 時系列分析
+    st.markdown("--- ")
+
+    # --- 2行目: 発生場所棒グラフと職種別インシデント詳細円グラフ ---
+    col3, col4 = st.columns(2)
+
+    with col3:
+        st.subheader("発生場所別インシデント件数")
+        location_counts = df['発生場所'].value_counts().sort_index()
+        fig_bar_location = px.bar(
+            location_counts, 
+            x=location_counts.index, 
+            y=location_counts.values, 
+            title='発生場所別',
+            labels={'x':'発生場所', 'y':'件数'},
+            color_discrete_sequence=px.colors.qualitative.Pastel # 色のシーケンス
+        )
+        fig_bar_location.update_layout(xaxis_tickangle=-45) # X軸ラベルを斜めにする
+        st.plotly_chart(fig_bar_location, use_container_width=True)
+
+    with col4:
+        st.subheader("職種ごとのインシデント詳細")
+        job_type_options = df['職種'].unique()
+        selected_job_type = st.selectbox("職種を選択してください", job_type_options)
+
+        if selected_job_type:
+            filtered_by_job = df[df['職種'] == selected_job_type]
+            if not filtered_by_job.empty:
+                job_content_counts = filtered_by_job['内容分類'].value_counts()
+                fig_pie_job_content = px.pie(
+                    job_content_counts, 
+                    values=job_content_counts.values, 
+                    names=job_content_counts.index, 
+                    title=f'{selected_job_type} の内容分類別インシデント件数',
+                    hole=0.3,
+                    color_discrete_sequence=px.colors.sequential.Plasma
+                )
+                fig_pie_job_content.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig_pie_job_content, use_container_width=True)
+            else:
+                st.info(f"{selected_job_type} のインシデントデータはありません。")
+
+    st.markdown("--- ")
+
+    # --- 3行目: 時系列グラフ ---
     st.subheader("月別インシデント発生件数")
-    # '発生日時'列をdatetime型に変換（もし文字列なら）
     df_time = df.copy()
     df_time['発生日時'] = pd.to_datetime(df_time['発生日時'])
-    # 月ごとに集計
-    monthly_counts = df_time.set_index('発生日時').resample('ME').size()
+    monthly_counts = df_time.set_index('発生日時').resample('ME').size().sort_index()
     monthly_counts.index = monthly_counts.index.strftime('%Y-%m')
-    st.line_chart(monthly_counts)
+    
+    fig_line_monthly = px.line(
+        monthly_counts, 
+        x=monthly_counts.index, 
+        y=monthly_counts.values, 
+        title='月別インシデント発生件数',
+        labels={'x':'年月', 'y':'件数'},
+        markers=True # マーカーを表示
+    )
+    st.plotly_chart(fig_line_monthly, use_container_width=True)
