@@ -42,6 +42,15 @@ def init_db():
                 patient_status_change_family_explanation TEXT,
                 content_category TEXT,
                 content_details TEXT,
+                content_details_shinsatsu TEXT,
+                content_details_shochi TEXT,
+                content_details_uketsuke TEXT,
+                content_details_houshasen TEXT,
+                content_details_rehabili TEXT,
+                content_details_kanjataio TEXT,
+                content_details_buhin TEXT,
+                injury_details TEXT,
+                injury_other_text TEXT,
                 cause_details TEXT,
                 manual_relation TEXT,
                 situation TEXT NOT NULL,
@@ -92,23 +101,7 @@ def init_db():
             if col_name not in columns:
                 cursor.execute(f"ALTER TABLE reports ADD COLUMN {col_name} {col_type}")
 
-        # --- 初回管理者アカウントの自動作成 ---
-        cursor.execute("SELECT COUNT(*) FROM users")
-        user_count = cursor.fetchone()[0]
-
-        if user_count == 0:
-            admin_username = os.environ.get('ADMIN_USERNAME')
-            admin_password = os.environ.get('ADMIN_PASSWORD')
-
-            if admin_username and admin_password:
-                hashed_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                               (admin_username, hashed_password, 'admin'))
-                conn.commit()
-                print(f"初回管理者アカウント '{admin_username}' を作成しました。")
-            else:
-                print("環境変数 ADMIN_USERNAME および ADMIN_PASSWORD が設定されていないため、初回管理者アカウントは作成されませんでした。")
-                print("手動でユーザーを登録するか、環境変数を設定してアプリを再起動してください。")
+        
 
         # --- 下書きテーブル ---
         cursor.execute('''
@@ -156,6 +149,13 @@ def verify_password(plain_password, hashed_password):
 def add_report(data: dict):
     """インシデント報告をデータベースに追加し、ステータスを'未読'に設定します"""
     data['status'] = '未読' # ★ ステータスを初期設定
+    # 新しい詳細項目をJSON文字列として保存
+    for key in ['content_details_shinsatsu', 'content_details_shochi', 'content_details_uketsuke', 'content_details_houshasen', 'content_details_rehabili', 'content_details_kanjataio', 'content_details_buhin', 'injury_details']:
+        if key in data and isinstance(data[key], list):
+            data[key] = json.dumps(data[key], ensure_ascii=False)
+    if 'injury_other_text' in data and data['injury_other_text'] is None:
+        data['injury_other_text'] = ""
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
         columns = ', '.join(data.keys())

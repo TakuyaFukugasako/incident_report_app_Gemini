@@ -8,7 +8,7 @@ from db_utils import add_report, add_draft, delete_draft, DateTimeEncoder # 必�
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.switch_page("pages/0_Login.py")
 
-st.set_page_config(page_title="新規報告", page_icon="✍️", layout="wide")
+st.set_page_config(page_title="新規報告", page_icon="✍️")
 
 # --- メッセージ表示エリア ---
 if st.session_state.get("report_submitted"):
@@ -44,14 +44,16 @@ defaults = {
     'location': "1FMRI室",
     'situation': "",
     'countermeasure': "",
-    'content_category': "診察・リハビリ",
+    'content_category': "診察",
     'content_details_shinsatsu': [],
+    'content_details_shochi': [],
+    'content_details_uketsuke': [],
+    'content_details_houshasen': [],
+    'content_details_rehabili': [],
     'content_details_tentou': [],
+    'content_details_kanjataio': [],
+    'content_details_buhin': [],
     'injury_details': [],
-    'injury_other_text': "",
-    'content_details_yakuzai': [],
-    'med_error_details': [],
-    'med_error_other_text': "",
     'cause_不適切な指示': [],
     'cause_不適切な指示_other': "",
     'cause_無確認': [],
@@ -102,6 +104,18 @@ if "loaded_draft" in st.session_state:
 
 # --- アプリケーション開始時に初期化を実行 ---
 init_session_state()
+
+# content_categoryが変更された場合に詳細項目をクリアするロジック
+if 'prev_content_category' not in st.session_state:
+    st.session_state.prev_content_category = st.session_state.content_category
+elif st.session_state.prev_content_category != st.session_state.content_category:
+    # カテゴリが変更された場合、関連する詳細項目をクリア
+    for key in list(st.session_state.keys()):
+        if key.startswith("content_details_"):
+            st.session_state[key] = []
+    st.session_state.injury_details = []
+    st.session_state.injury_other_text = ""
+    st.session_state.prev_content_category = st.session_state.content_category
 
 # --- フォーム --- 
 with st.form(key='report_form', clear_on_submit=False): # clear_on_submitをFalseにして入力値を保持
@@ -230,26 +244,41 @@ with st.form(key='report_form', clear_on_submit=False): # clear_on_submitをFals
     st.text_area("今後の対策（箇条書きで記入）", key="countermeasure")
     
     st.markdown("--- ")
-    st.subheader("インシデントの詳細")
+    submit_col, draft_col = st.columns([1, 1])
+    with submit_col:
+        submit_button = st.form_submit_button(label='✅ この内容で報告する', use_container_width=True)
+    with draft_col:
+        draft_button = st.form_submit_button(label='📝 下書き保存', use_container_width=True)
+    
+st.markdown("--- ")
+st.subheader("インシデントの詳細")
 
-    with st.expander("内容（関連する箇所にチェック）", expanded=True):
-        content_category = st.radio("大分類", ["診察・リハビリ", "転倒・転落", "薬剤", "検査・処置", "放射線", "リハビリ", "ME機器", "コミュニケーション", "その他"], key="content_category")
+content_category = st.radio("大分類", ["診察", "処置", "受付", "放射線業務", "リハビリ業務", "転倒・転落", "患者対応", "物品破損"], key="content_category")
+
+with st.expander("内容（関連する箇所にチェック）", expanded=True):
         
         # 各カテゴリの詳細入力（キーをsession_stateと一致させる）
-        if content_category == "診察・リハビリ":
-            st.multiselect("詳細", ["患者間違い", "予約日時の間違い", "予約漏れ", "検査の種類間違い", "その他"], key="content_details_shinsatsu")
+        if content_category == "診察":
+            st.multiselect("詳細", ["患者間違い", "オーダー間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達漏れ", "返却忘れ", "確認漏れ", "情報漏洩"], key="content_details_shinsatsu")
+        elif content_category == "処置":
+            st.multiselect("詳細", ["患者間違い", "部位間違い", "案内間違い", "カルテ記載間違い", "確認漏れ", "伝達漏れ", "ラベル間違い", "針刺し事故"], key="content_details_shochi")
+        elif content_category == "受付":
+            st.multiselect("詳細", ["患者間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達漏れ", "返却忘れ", "確認漏れ", "情報漏洩", "会計間違い", "郵送関係"], key="content_details_uketsuke")
+        elif content_category == "放射線業務":
+            st.multiselect("詳細", ["患者間違い", "機器登録間違い", "マーカー間違い", "骨密度解析間違い", "MRI室金属持ち込み", "画像転送忘れ", "左右間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達間違い", "返却忘れ", "確認漏れ", "情報漏洩", "MRI完全吸着", "技師コメント間違い", "装置故障"], key="content_details_houshasen")
+        elif content_category == "リハビリ業務":
+            st.multiselect("詳細", ["患者間違い", "部位間違い", "計画書関連", "リハビリ処方による受傷", "リハビリ中の軽微な事故", "オーダー間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達間違い", "返却忘れ", "確認漏れ", "情報漏洩"], key="content_details_rehabili")
         elif content_category == "転倒・転落":
-            st.multiselect("詳細", ["転倒", "転落", "滑落"], key="content_details_tentou")
+            st.multiselect("詳細", ["単独事故", "介助時"], key="content_details_tentou")
             st.multiselect("外傷の有無など", ["外傷なし", "擦過傷", "表皮剥離", "打撲", "骨折", "その他"], key="injury_details")
             if "その他" in st.session_state.injury_details:
                 st.text_input("その他（外傷の詳細）", key="injury_other_text")
-        elif content_category == "薬剤":
-            st.multiselect("詳細", ["注射・点滴", "内服", "外用薬", "その他"], key="content_details_yakuzai")
-            st.multiselect("エラー詳細", ["患者間違い", "薬剤間違い", "投与方法", "未投与", "投与量", "投与時間", "投与速度", "その他"], key="med_error_details")
-            if "その他" in st.session_state.med_error_details:
-                st.text_input("その他（エラー詳細）", key="med_error_other_text")
+        elif content_category == "患者対応":
+            st.multiselect("詳細", ["クレーム", "トラブル"], key="content_details_kanjataio")
+        elif content_category == "物品破損":
+            st.multiselect("詳細", ["破損"], key="content_details_buhin")
 
-    with st.expander("発生・発見の原因（複数選択可）", expanded=True):
+with st.expander("発生・発見の原因（複数選択可）", expanded=True):
         cause_options = {
             "不適切な指示": ["口頭指示", "検査伝票・指示ラベル・処方箋の誤記", "その他"],
             "無確認": ["検査伝票・指示ラベル・処方箋で確認せず", "思い込み・勘違い", "疑問に思ったが確認せず", "ダブルチェックせず", "正しい確認方法を知らなかった", "機器・器具の操作方法を確認しなかった", "患者情報を確認しなかった", "その他"],
@@ -263,7 +292,7 @@ with st.form(key='report_form', clear_on_submit=False): # clear_on_submitをFals
             if "その他" in st.session_state[f"cause_{category}"]:
                 st.text_input(f"【{category}】その他の詳細", key=f"cause_{category}_other")
     
-    with st.expander("マニュアルとの関連", expanded=True):
+with st.expander("マニュアルとの関連", expanded=True):
         st.radio("手順に対して", ["手順に従っていた", "手順に従っていなかった", "手順がなかった", "不慣れ・不手際"], key="manual_relation")
     
     st.markdown("--- ")
@@ -287,8 +316,16 @@ if submit_button:
     else:
         # --- インシデント内容を文字列にまとめる ---
         content_details_list = []
-        if st.session_state.content_category == "診察・リハビリ":
+        if st.session_state.content_category == "診察":
             content_details_list.extend(st.session_state.content_details_shinsatsu)
+        elif st.session_state.content_category == "処置":
+            content_details_list.extend(st.session_state.content_details_shochi)
+        elif st.session_state.content_category == "受付":
+            content_details_list.extend(st.session_state.content_details_uketsuke)
+        elif st.session_state.content_category == "放射線業務":
+            content_details_list.extend(st.session_state.content_details_houshasen)
+        elif st.session_state.content_category == "リハビリ業務":
+            content_details_list.extend(st.session_state.content_details_rehabili)
         elif st.session_state.content_category == "転倒・転落":
             content_details_list.extend(st.session_state.content_details_tentou)
             if st.session_state.injury_details:
@@ -296,18 +333,15 @@ if submit_button:
                 if st.session_state.injury_other_text:
                     injury_str += f" その他: {st.session_state.injury_other_text}"
                 content_details_list.append(injury_str)
-        elif st.session_state.content_category == "薬剤":
-            content_details_list.extend(st.session_state.content_details_yakuzai)
-            if st.session_state.med_error_details:
-                med_error_str = f"(エラー: {', '.join(st.session_state.med_error_details)})"
-                if st.session_state.med_error_other_text:
-                    med_error_str += f" その他: {st.session_state.med_error_other_text}"
-                content_details_list.append(med_error_str)
+        elif st.session_category == "患者対応":
+            content_details_list.extend(st.session_state.content_details_kanjataio)
+        elif st.session_category == "物品破損":
+            content_details_list.extend(st.session_state.content_details_buhin)
         content_details_str = ", ".join(content_details_list)
 
         # --- 発生原因を文字列にまとめる ---
         cause_list = []
-        for category in cause_options.keys():
+        for category, options in cause_options.items():
             items = st.session_state.get(f"cause_{category}", [])
             if items:
                 item_str = f"{category}: {', '.join(items)}"
@@ -336,6 +370,15 @@ if submit_button:
             "patient_status_change_family_explanation": st.session_state.patient_status_change_family_explanation,
             "content_category": st.session_state.content_category,
             "content_details": content_details_str,
+            "content_details_shinsatsu": st.session_state.content_details_shinsatsu,
+            "content_details_shochi": st.session_state.content_details_shochi,
+            "content_details_uketsuke": st.session_state.content_details_uketsuke,
+            "content_details_houshasen": st.session_state.content_details_houshasen,
+            "content_details_rehabili": st.session_state.content_details_rehabili,
+            "content_details_kanjataio": st.session_state.content_details_kanjataio,
+            "content_details_buhin": st.session_state.content_details_buhin,
+            "injury_details": st.session_state.injury_details,
+            "injury_other_text": st.session_state.injury_other_text,
             "cause_details": cause_summary_str,
             "manual_relation": st.session_state.manual_relation,
             "situation": st.session_state.situation,

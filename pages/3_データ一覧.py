@@ -7,7 +7,7 @@ import datetime
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.switch_page("pages/0_Login.py")
 
-st.set_page_config(page_title="検索・一覧", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="検索・一覧", page_icon="🔍")
 
 st.title(" 報告データの検索・一覧")
 st.markdown("---")
@@ -41,6 +41,15 @@ else:
         'patient_status_change_family_explanation': '家族への説明',
         'content_category': '内容分類',
         'content_details': 'インシデント内容',
+        'content_details_shinsatsu': '診察詳細',
+        'content_details_shochi': '処置詳細',
+        'content_details_uketsuke': '受付詳細',
+        'content_details_houshasen': '放射線業務詳細',
+        'content_details_rehabili': 'リハビリ業務詳細',
+        'content_details_kanjataio': '患者対応詳細',
+        'content_details_buhin': '物品破損詳細',
+        'injury_details': '外傷詳細',
+        'injury_other_text': 'その他外傷',
         'cause_details': '発生原因',
         'manual_relation': 'マニュアル関連',
         'situation': '状況詳細',
@@ -204,6 +213,26 @@ else:
             st.markdown(detail_item_html("発生場所", report_details.get('発生場所', '-')), unsafe_allow_html=True)
             st.markdown(detail_item_html("内容分類", report_details.get('内容分類', '-')), unsafe_allow_html=True)
             st.markdown(detail_block_html("インシデント内容", report_details.get('インシデント内容', '-')), unsafe_allow_html=True)
+            
+            # 新しい詳細項目を表示
+            if report_details.get('内容分類') == "診察":
+                st.markdown(detail_block_html("診察詳細", report_details.get('診察詳細', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "処置":
+                st.markdown(detail_block_html("処置詳細", report_details.get('処置詳細', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "受付":
+                st.markdown(detail_block_html("受付詳細", report_details.get('受付詳細', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "放射線業務":
+                st.markdown(detail_block_html("放射線業務詳細", report_details.get('放射線業務詳細', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "リハビリ業務":
+                st.markdown(detail_block_html("リハビリ業務詳細", report_details.get('リハビリ業務詳細', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "転倒・転落":
+                st.markdown(detail_block_html("転倒・転落詳細", report_details.get('転倒・転落詳細', '-')), unsafe_allow_html=True)
+                st.markdown(detail_block_html("外傷詳細", report_details.get('外傷詳細', '-')), unsafe_allow_html=True)
+                st.markdown(detail_block_html("その他外傷", report_details.get('その他外傷', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "患者対応":
+                st.markdown(detail_block_html("患者対応詳細", report_details.get('患者対応詳細', '-')), unsafe_allow_html=True)
+            elif report_details.get('内容分類') == "物品破損":
+                st.markdown(detail_block_html("物品破損詳細", report_details.get('物品破損詳細', '-')), unsafe_allow_html=True)
             st.markdown(detail_block_html("状況詳細", report_details.get('状況詳細', '-')), unsafe_allow_html=True)
             st.markdown(detail_block_html("今後の対策", report_details.get('今後の対策', '-')), unsafe_allow_html=True)
 

@@ -7,7 +7,7 @@ from db_utils import get_all_drafts, delete_draft
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.switch_page("pages/0_Login.py")
 
-st.set_page_config(page_title="下書き管理", page_icon="📝", layout="wide")
+st.set_page_config(page_title="下書き管理", page_icon="")
 st.title("📝 下書き管理")
 st.markdown("--- ")
 

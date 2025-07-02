@@ -7,7 +7,7 @@ from db_utils import get_all_reports
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
     st.switch_page("pages/0_Login.py")
 
-st.set_page_config(page_title="グラフ・分析", page_icon="📊", layout="wide")
+st.set_page_config(page_title="グラフ・分析", page_icon="")
 
 st.title(" グラフ・分析ダッシュボード")
 st.markdown("---")
@@ -29,6 +29,15 @@ else:
         'location': '発生場所',
         'connection_with_accident': '事故との関連性',
         'content_details': 'インシデント内容',
+        'content_details_shinsatsu': '診察詳細',
+        'content_details_shochi': '処置詳細',
+        'content_details_uketsuke': '受付詳細',
+        'content_details_houshasen': '放射線業務詳細',
+        'content_details_rehabili': 'リハビリ業務詳細',
+        'content_details_kanjataio': '患者対応詳細',
+        'content_details_buhin': '物品破損詳細',
+        'injury_details': '外傷詳細',
+        'injury_other_text': 'その他外傷',
         'cause_details': '発生原因',
         'manual_relation': 'マニュアル関連',
         'situation': '状況詳細',
