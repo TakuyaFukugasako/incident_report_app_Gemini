@@ -156,9 +156,11 @@ def verify_password(plain_password, hashed_password):
 
 # --- レポート関連 ---
 
-def add_report(data: dict):
-    """インシデント報告をデータベースに追加し、ステータスを'未読'に設定します"""
-    data['status'] = '未読' # ★ ステータスを初期設定
+def add_report(data: dict, status: str = '未読', created_at: datetime.datetime = None):
+    """インシデント報告をデータベースに追加します"""
+    data['status'] = status
+    if created_at:
+        data['created_at'] = created_at.isoformat()
     # 新しい詳細項目をJSON文字列として保存
     for key in ['content_details_shinsatsu', 'content_details_shochi', 'content_details_uketsuke', 'content_details_houshasen', 'content_details_rehabili', 'content_details_kanjataio', 'content_details_kiki', 'content_details_sonota', 'injury_details']:
         if key in data and isinstance(data[key], list):
