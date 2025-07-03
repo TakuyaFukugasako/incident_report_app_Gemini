@@ -6,8 +6,8 @@ from db_utils import init_db # db_utilsからinit_dbをインポート
 init_db() # アプリ起動時にテーブルを作成
 
 # --- 認証チェック ---
-#if "logged_in" not in st.session_state or not st.session_state.logged_in:
-#    st.switch_page("pages/0_Login.py")
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.switch_page("pages/0_Login.py")
 
 # --- アプリ設定 ---
 st.set_page_config(

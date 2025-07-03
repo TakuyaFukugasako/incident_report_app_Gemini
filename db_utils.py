@@ -72,9 +72,16 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
+                report_save_path TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # usersテーブルにreport_save_pathカラムを追加（もし存在しない場合）
+        cursor.execute("PRAGMA table_info(users)")
+        user_columns = [row[1] for row in cursor.fetchall()]
+        if 'report_save_path' not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN report_save_path TEXT")
 
         # --- テーブルスキーマのマイグレーション (reportsテーブル) ---
         cursor.execute("PRAGMA table_info(reports)")
@@ -126,14 +133,14 @@ def init_db():
 
 # --- ユーザー関連 ---
 
-def add_user(username, password, role='general'):
+def add_user(username, password, role='general', report_save_path=None):
     """新しいユーザーをデータベースに追加します。パスワードはハッシュ化されます。"""
     with get_db_connection() as conn:
         cursor = conn.cursor()
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         try:
-            cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                           (username, hashed_password, role))
+            cursor.execute("INSERT INTO users (username, password_hash, role, report_save_path) VALUES (?, ?, ?, ?)",
+                           (username, hashed_password, role, report_save_path))
             conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -143,11 +150,12 @@ def add_user(username, password, role='general'):
 def get_user_by_username(username):
     """ユーザー名でユーザー情報を取得します。"""
     with get_db_connection() as conn:
+        conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, password_hash, role FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT id, username, password_hash, role, report_save_path FROM users WHERE username = ?", (username,))
         user_data = cursor.fetchone()
         if user_data:
-            return {"id": user_data[0], "username": user_data[1], "password_hash": user_data[2], "role": user_data[3]}
+            return dict(user_data)
         return None
 
 def verify_password(plain_password, hashed_password):
@@ -155,6 +163,56 @@ def verify_password(plain_password, hashed_password):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # --- レポート関連 ---
+
+def get_report_by_id(report_id: int) -> dict | None:
+    """指定されたIDのレポートを取得します"""
+    with get_db_connection() as conn:
+        conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM reports WHERE id = ?", (report_id,))
+        report_data = cursor.fetchone()
+        if report_data:
+            return dict(report_data)
+        return None
+
+def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
+    """レポートデータをCSV形式で生成し、ファイルとして保存します"""
+    if not report_data:
+        print("DEBUG: generate_and_save_report_csv: report_data is empty.")
+        return
+
+    output_dir = "approved_reports"
+    if approver_id:
+        with get_db_connection() as conn:
+            conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
+            cursor = conn.cursor()
+            cursor.execute("SELECT report_save_path FROM users WHERE id = ?", (approver_id,))
+            path_data = cursor.fetchone()
+            if path_data and path_data['report_save_path']:
+                output_dir = path_data['report_save_path']
+    
+    print(f"DEBUG: generate_and_save_report_csv: Determined output_dir: {output_dir}")
+
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"DEBUG: generate_and_save_report_csv: Directory created/exists: {output_dir}")
+    except Exception as e:
+        print(f"ERROR: generate_and_save_report_csv: Failed to create directory {output_dir}: {e}")
+        return
+
+    # ファイル名に含めるためのタイムスタンプ
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"report_{report_data.get('id', 'unknown')}_{timestamp}.csv"
+    filepath = os.path.join(output_dir, filename)
+    print(f"DEBUG: generate_and_save_report_csv: Constructed filepath: {filepath}")
+
+    # DataFrameに変換してCSVとして保存
+    df = pd.DataFrame([report_data])
+    try:
+        df.to_csv(filepath, index=False, encoding='utf-8-sig') # Excelで開けるようにutf-8-sig
+        print(f"DEBUG: CSVレポートを保存しました: {filepath}")
+    except Exception as e:
+        print(f"ERROR: generate_and_save_report_csv: Failed to save CSV to {filepath}: {e}")
 
 def add_report(data: dict, status: str = '未読', created_at: datetime.datetime = None):
     """インシデント報告をデータベースに追加します"""
@@ -174,9 +232,16 @@ def add_report(data: dict, status: str = '未読', created_at: datetime.datetime
         placeholders = ', '.join(['?'] * len(data))
         sql = f"INSERT INTO reports ({columns}) VALUES ({placeholders})"
         cursor.execute(sql, tuple(data.values()))
+        report_id = cursor.lastrowid # 新しく挿入されたレポートのIDを取得
         conn.commit()
 
-def update_report_status(report_id: int, updates: dict):
+        # ステータスが「承認済み」の場合、CSVを生成
+        if data['status'] == '承認済み':
+            report = get_report_by_id(report_id)
+            if report:
+                generate_and_save_report_csv(report, approver_id=None) # 過去データ報告からの追加なのでapprover_idはNone
+
+def update_report_status(report_id: int, updates: dict, approver_id: int = None):
     """指定されたIDのレポートのステータスや承認者情報を更新します"""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -188,6 +253,12 @@ def update_report_status(report_id: int, updates: dict):
         
         cursor.execute(sql, tuple(values))
         conn.commit()
+
+        # ステータスが「承認済み」になった場合、CSVを生成
+        if 'status' in updates and updates['status'] == '承認済み':
+            report = get_report_by_id(report_id)
+            if report:
+                generate_and_save_report_csv(report, approver_id)
 
 def get_all_reports():
     """全てのインシデント報告を取得します"""
@@ -201,10 +272,11 @@ def get_all_reports():
 def get_all_users():
     """全てのユーザー情報を取得します（パスワードハッシュは含まない）"""
     with get_db_connection() as conn:
+        conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY username")
+        cursor.execute("SELECT id, username, role, report_save_path, created_at FROM users ORDER BY username")
         users_data = cursor.fetchall()
-        return [{'id': row[0], 'username': row[1], 'role': row[2], 'created_at': row[3]} for row in users_data]
+        return [dict(row) for row in users_data]
 
 def update_user_role(user_id, new_role):
     """ユーザーのロールを更新します"""
@@ -219,6 +291,13 @@ def update_user_password(user_id, new_password):
         cursor = conn.cursor()
         hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_password, user_id))
+        conn.commit()
+
+def update_user_report_save_path(user_id, new_path):
+    """ユーザーのレポート保存パスを更新します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET report_save_path = ? WHERE id = ?", (new_path, user_id))
         conn.commit()
 
 def delete_user(user_id):

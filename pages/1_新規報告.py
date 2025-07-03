@@ -5,8 +5,8 @@ import json
 from db_utils import add_report, add_draft, delete_draft, DateTimeEncoder # 必要な関数をインポート
 
 # --- 認証チェック ---
-#if "logged_in" not in st.session_state or not st.session_state.logged_in:
-#    st.switch_page("pages/0_Login.py")
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.switch_page("pages/0_Login.py")
 
 st.set_page_config(page_title="新規報告", page_icon="✍️", layout="wide")
 
