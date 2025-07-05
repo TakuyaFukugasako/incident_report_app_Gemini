@@ -5,6 +5,100 @@ import datetime
 import json
 import bcrypt # bcryptライブラリをインポート
 import os # 環境変数を読み込むためにosモジュールをインポート
+from weasyprint import HTML # PDF生成のためにWeasyPrintをインポート
+
+# --- HTMLテンプレートの定義 ---
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>インシデント報告書 - ID: {id}</title>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 20px; background-color: #f4f4f4; }}
+        .container {{ max-width: 800px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        h1, h2, h3 {{ color: #0056b3; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 20px; }}
+        .section {{ margin-bottom: 20px; }}
+        .field {{ margin-bottom: 10px; }}
+        .field strong {{ display: inline-block; width: 150px; color: #555; }}
+        .situation, .countermeasure {{ border: 1px solid #ddd; padding: 15px; border-radius: 5px; background-color: #f9f9f9; white-space: pre-wrap; }}
+        .footer {{ text-align: center; margin-top: 30px; font-size: 0.8em; color: #777; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>インシデント報告書</h1>
+        <div class="section">
+            <h2>基本情報</h2>
+            <div class="field"><strong>報告ID:</strong> {id}</div>
+            <div class="field"><strong>発生日時:</strong> {occurrence_datetime}</div>
+            <div class="field"><strong>報告者氏名:</strong> {reporter_name}</div>
+            <div class="field"><strong>職種:</strong> {job_type}</div>
+            <div class="field"><strong>影響度レベル:</strong> {level}</div>
+            <div class="field"><strong>発生場所:</strong> {location}</div>
+            <div class="field"><strong>事故との関連性:</strong> {connection_with_accident}</div>
+            <div class="field"><strong>総実務経験:</strong> {years_of_experience}</div>
+            <div class="field"><strong>入職年数:</strong> {years_since_joining}</div>
+        </div>
+
+        <div class="section">
+            <h2>患者情報</h2>
+            <div class="field"><strong>患者ID:</strong> {patient_ID}</div>
+            <div class="field"><strong>患者氏名:</strong> {patient_name}</div>
+            <div class="field"><strong>性別:</strong> {patient_gender}</div>
+            <div class="field"><strong>年齢:</strong> {patient_age}</div>
+            <div class="field"><strong>認知症の有無:</strong> {dementia_status}</div>
+            <div class="field"><strong>事故などによる患者の状態変化:</strong> {patient_status_change_accident}</div>
+            <div class="field"><strong>患者への説明:</strong> {patient_status_change_patient_explanation}</div>
+            <div class="field"><strong>家族への説明:</strong> {patient_status_change_family_explanation}</div>
+        </div>
+
+        <div class="section">
+            <h2>インシデントの詳細</h2>
+            <div class="field"><strong>大分類:</strong> {content_category}</div>
+            <div class="field"><strong>詳細内容:</strong> {content_details}</div>
+            <div class="field"><strong>発生・発見の原因:</strong> {cause_details}</div>
+            <div class="field"><strong>マニュアルとの関連:</strong> {manual_relation}</div>
+        </div>
+
+        <div class="section">
+            <h2>状況と対策</h2>
+            <h3>発生の状況と直後の対応</h3>
+            <div class="situation">{situation}</div>
+            <h3>今後の対策</h3>
+            <div class="countermeasure">{countermeasure}</div>
+        </div>
+
+        <div class="footer">
+            <p>報告書生成日時: {created_at}</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+def generate_report_html_content(report_data: dict) -> str:
+    """レポートデータからHTMLコンテンツを生成します"""
+    # 辞書内のNone値を空文字列に変換して、format()でエラーが出ないようにする
+    formatted_data = {k: v if v is not None else "N/A" for k, v in report_data.items()}
+    
+    # 日付/時刻のフォーマット
+    if 'occurrence_datetime' in formatted_data and formatted_data['occurrence_datetime'] != "N/A":
+        try:
+            dt_obj = datetime.datetime.fromisoformat(formatted_data['occurrence_datetime'])
+            formatted_data['occurrence_datetime'] = dt_obj.strftime("%Y年%m月%d日 %H時%M分")
+        except ValueError:
+            pass # 変換できない場合はそのまま
+
+    if 'created_at' in formatted_data and formatted_data['created_at'] != "N/A":
+        try:
+            dt_obj = datetime.datetime.fromisoformat(formatted_data['created_at'])
+            formatted_data['created_at'] = dt_obj.strftime("%Y年%m月%d日 %H時%M分%S秒")
+        except ValueError:
+            pass # 変換できない場合はそのまま
+
+    return HTML_TEMPLATE.format(**formatted_data)
 
 DB_NAME = "incident_reports.db"
 
@@ -203,6 +297,39 @@ def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
     except Exception as e:
         print(f"ERROR: generate_and_save_report_csv: Failed to save CSV to {filepath}: {e}")
 
+def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
+    """レポートデータをPDF形式で生成し、ファイルとして保存します"""
+    if not report_data:
+        print("DEBUG: generate_and_save_report_pdf: report_data is empty.")
+        return
+
+    output_dir = "C:\\Users\\user\\Desktop\\新しいフォルダー\\新しいフォルダー" # PDFの保存先パス
+    # ユーザーごとのパス設定を考慮する場合は、generate_and_save_report_csvと同様のロジックを追加
+
+    print(f"DEBUG: generate_and_save_report_pdf: Determined output_dir: {output_dir}")
+
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        print(f"DEBUG: generate_and_save_report_pdf: Directory created/exists: {output_dir}")
+    except Exception as e:
+        print(f"ERROR: generate_and_save_report_pdf: Failed to create directory {output_dir}: {e}")
+        return
+
+    # ファイル名に含めるためのタイムスタンプ
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"report_{report_data.get('id', 'unknown')}_{timestamp}.pdf"
+    filepath = os.path.join(output_dir, filename)
+    print(f"DEBUG: generate_and_save_report_pdf: Constructed filepath: {filepath}")
+
+    # HTMLコンテンツを生成
+    html_content = generate_report_html_content(report_data)
+
+    try:
+        HTML(string=html_content).write_pdf(filepath)
+        print(f"DEBUG: PDFレポートを保存しました: {filepath}")
+    except Exception as e:
+        print(f"ERROR: generate_and_save_report_pdf: Failed to save PDF to {filepath}: {e}")
+
 def add_report(data: dict, status: str = '未読', created_at: datetime.datetime = None):
     """インシデント報告をデータベースに追加します"""
     data['status'] = status
@@ -224,11 +351,12 @@ def add_report(data: dict, status: str = '未読', created_at: datetime.datetime
         report_id = cursor.lastrowid # 新しく挿入されたレポートのIDを取得
         conn.commit()
 
-        # ステータスが「承認済み」の場合、CSVを生成
+        # ステータスが「承認済み」の場合、CSVとPDFを生成
         if data['status'] == '承認済み':
             report = get_report_by_id(report_id)
             if report:
                 generate_and_save_report_csv(report, approver_id=None) # 過去データ報告からの追加なのでapprover_idはNone
+                generate_and_save_report_pdf(report, approver_id=None) # PDFも生成
 
 def update_report_status(report_id: int, updates: dict, approver_id: int = None):
     """指定されたIDのレポートのステータスや承認者情報を更新します"""
@@ -243,11 +371,12 @@ def update_report_status(report_id: int, updates: dict, approver_id: int = None)
         cursor.execute(sql, tuple(values))
         conn.commit()
 
-        # ステータスが「承認済み」になった場合、CSVを生成
+        # ステータスが「承認済み」になった場合、CSVとPDFを生成
         if 'status' in updates and updates['status'] == '承認済み':
             report = get_report_by_id(report_id)
             if report:
                 generate_and_save_report_csv(report, approver_id)
+                generate_and_save_report_pdf(report, approver_id) # PDFも生成
 
 def get_all_reports():
     """全てのインシデント報告を取得します"""
