@@ -1,5 +1,5 @@
 import streamlit as st
-from db_utils import get_all_users, update_user_role, update_user_password, delete_user, add_user, update_user_report_save_path
+from db_utils import get_all_users, update_user_role, update_user_password, delete_user, add_user
 import bcrypt
 import pandas as pd
 import os
@@ -65,22 +65,6 @@ else:
                     st.session_state.user_management_message_type = "success"
                     st.rerun()
             
-            # レポート保存パスの変更
-            with st.form(key=f"edit_save_path_form_{selected_user_id}"):
-                st.write("**レポート保存パスの変更**")
-                current_path = current_user_data.get('report_save_path', '')
-                new_save_path = st.text_input("承認済みレポートの保存先パス", value=current_path, placeholder=r"例: C:\Users\YourName\Documents\ApprovedReports")
-                if st.form_submit_button("保存パスを更新"):
-                    # パスが入力されている場合は存在チェック
-                    if new_save_path and not os.path.isdir(new_save_path):
-                        st.session_state.user_management_message = "指定されたパスが存在しないか、ディレクトリではありません。"
-                        st.session_state.user_management_message_type = "error"
-                    else:
-                        update_user_report_save_path(selected_user_id, new_save_path if new_save_path else None)
-                        st.session_state.user_management_message = f"{selected_username} のレポート保存パスを {new_save_path if new_save_path else '未設定'} に更新しました。"
-                        st.session_state.user_management_message_type = "success"
-                    st.rerun()
-
             # パスワードリセット
             with st.form(key=f"reset_password_form_{selected_user_id}"):
                 st.write("**パスワードのリセット**")

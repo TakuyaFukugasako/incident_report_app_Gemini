@@ -72,16 +72,9 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
                 role TEXT NOT NULL,
-                report_save_path TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-
-        # usersテーブルにreport_save_pathカラムを追加（もし存在しない場合）
-        cursor.execute("PRAGMA table_info(users)")
-        user_columns = [row[1] for row in cursor.fetchall()]
-        if 'report_save_path' not in user_columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN report_save_path TEXT")
 
         # --- テーブルスキーマのマイグレーション (reportsテーブル) ---
         cursor.execute("PRAGMA table_info(reports)")
@@ -133,14 +126,14 @@ def init_db():
 
 # --- ユーザー関連 ---
 
-def add_user(username, password, role='general', report_save_path=None):
+def add_user(username, password, role='general'):
     """新しいユーザーをデータベースに追加します。パスワードはハッシュ化されます。"""
     with get_db_connection() as conn:
         cursor = conn.cursor()
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         try:
-            cursor.execute("INSERT INTO users (username, password_hash, role, report_save_path) VALUES (?, ?, ?, ?)",
-                           (username, hashed_password, role, report_save_path))
+            cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+                           (username, hashed_password, role))
             conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -152,7 +145,7 @@ def get_user_by_username(username):
     with get_db_connection() as conn:
         conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, password_hash, role, report_save_path FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT id, username, password_hash, role FROM users WHERE username = ?", (username,))
         user_data = cursor.fetchone()
         if user_data:
             return dict(user_data)
@@ -181,15 +174,11 @@ def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
         print("DEBUG: generate_and_save_report_csv: report_data is empty.")
         return
 
-    output_dir = "approved_reports"
-    if approver_id:
-        with get_db_connection() as conn:
-            conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
-            cursor = conn.cursor()
-            cursor.execute("SELECT report_save_path FROM users WHERE id = ?", (approver_id,))
-            path_data = cursor.fetchone()
-            if path_data and path_data['report_save_path']:
-                output_dir = path_data['report_save_path']
+    # --- ここにCSVファイルの保存先パスを指定してください ---
+    # 例: output_dir = "C:\Users\YourName\Documents\ApprovedReports"
+    # 例: output_dir = os.path.join(os.path.expanduser("~"), "Desktop", "ApprovedReports") # デスクトップに保存する場合
+    output_dir = "C:\\Users\\user\\Desktop\\新しいフォルダー" # デフォルトはアプリケーション実行ディレクトリ内のapproved_reports
+    # ---------------------------------------------------
     
     print(f"DEBUG: generate_and_save_report_csv: Determined output_dir: {output_dir}")
 
@@ -274,7 +263,7 @@ def get_all_users():
     with get_db_connection() as conn:
         conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, report_save_path, created_at FROM users ORDER BY username")
+        cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY username")
         users_data = cursor.fetchall()
         return [dict(row) for row in users_data]
 
@@ -291,13 +280,6 @@ def update_user_password(user_id, new_password):
         cursor = conn.cursor()
         hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed_password, user_id))
-        conn.commit()
-
-def update_user_report_save_path(user_id, new_path):
-    """ユーザーのレポート保存パスを更新します"""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET report_save_path = ? WHERE id = ?", (new_path, user_id))
         conn.commit()
 
 def delete_user(user_id):

@@ -208,7 +208,7 @@ else:
                                 updates.update({'status': '承認中(1/2)', 'approver1': approver_name, 'approved_at1': datetime.datetime.now()})
                             elif selected_report_details.get('ステータス') == '承認中(1/2)':
                                 updates.update({'status': '承認済み', 'approver2': approver_name, 'approved_at2': datetime.datetime.now()})
-                            update_report_status(st.session_state.selected_approval_report_id, updates)
+                            update_report_status(st.session_state.selected_approval_report_id, updates, approver_id=st.session_state.get('id'))
                             st.success("承認状態を更新しました。")
                             st.rerun()
 
