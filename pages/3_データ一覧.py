@@ -147,6 +147,19 @@ else:
     if 'selected_report_id' not in st.session_state:
         st.session_state.selected_report_id = None
 
+    # --- ページネーション --- 
+    ITEMS_PER_PAGE = 10
+    if 'current_page' not in st.session_state:
+        st.session_state.current_page = 0
+
+    total_items = len(filtered_df)
+    total_pages = (total_items + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+
+    start_index = st.session_state.current_page * ITEMS_PER_PAGE
+    end_index = min(start_index + ITEMS_PER_PAGE, total_items)
+
+    display_df = filtered_df.iloc[start_index:end_index]
+
     # --- 検索結果をテーブル表示 ---
     header_cols = st.columns([1, 3, 1, 2, 3, 3, 1, 1])
     headers = ["ステータス", "発生日時", "職種", "発生場所", "内容分類", "報告者", "Lv.", ""]
@@ -154,21 +167,41 @@ else:
         col.markdown(f"**{header}**")
     st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
 
-    for _, report in filtered_df.iterrows():
-        data_cols = st.columns([1, 3, 1, 2, 3, 3, 1, 1])
-        status = report.get('ステータス', '-')
-        status_color = {"未読": "#e74c3c", "承認中(1/2)": "#f39c12", "承認済み": "#2ecc71"}.get(status, "#7f8c8d")
-        data_cols[0].markdown(f"<span style='color: {status_color};'>●</span> {status}", unsafe_allow_html=True)
-        data_cols[1].write(report['発生日時'].strftime('%Y-%m-%d %H:%M'))
-        data_cols[2].write(report.get('職種', '-'))
-        data_cols[3].write(report.get('発生場所', '-'))
-        data_cols[4].write(report.get('内容分類', '-'))
-        data_cols[5].write(report.get('報告者', '-'))
-        data_cols[6].write(report.get('影響度レベル', '-'))
-        if data_cols[7].button("詳細", key=f"detail_btn_{report['報告ID']}", use_container_width=True):
-            st.session_state.selected_report_id = report['報告ID']
-            st.rerun()
-        st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
+    if display_df.empty:
+        st.info("該当するデータはありません。")
+    else:
+        for _, report in display_df.iterrows():
+            data_cols = st.columns([1, 3, 1, 2, 3, 3, 1, 1])
+            status = report.get('ステータス', '-')
+            status_color = {"未読": "#e74c3c", "承認中(1/2)": "#f39c12", "承認済み": "#2ecc71"}.get(status, "#7f8c8d")
+            data_cols[0].markdown(f"<span style='color: {status_color};'>●</span> {status}", unsafe_allow_html=True)
+            data_cols[1].write(report['発生日時'].strftime('%Y-%m-%d %H:%M'))
+            data_cols[2].write(report.get('職種', '-'))
+            data_cols[3].write(report.get('発生場所', '-'))
+            data_cols[4].write(report.get('内容分類', '-'))
+            data_cols[5].write(report.get('報告者', '-'))
+            data_cols[6].write(report.get('影響度レベル', '-'))
+            if data_cols[7].button("詳細", key=f"detail_btn_{report['報告ID']}", use_container_width=True):
+                st.session_state.selected_report_id = report['報告ID']
+                st.rerun()
+            st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
+
+        # --- ページネーションコントロール ---
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_prev, col_info, col_next = st.columns([1, 2, 1])
+
+        with col_prev:
+            if st.session_state.current_page > 0:
+                if st.button("◀ 前のページ", use_container_width=True):
+                    st.session_state.current_page -= 1
+                    st.rerun()
+        with col_info:
+            st.markdown(f"<div style='text-align: center; font-size: 1.1em; font-weight: bold;'>ページ {st.session_state.current_page + 1} / {total_pages}</div>", unsafe_allow_html=True)
+        with col_next:
+            if st.session_state.current_page < total_pages - 1:
+                if st.button("次のページ ▶", use_container_width=True):
+                    st.session_state.current_page += 1
+                    st.rerun()
 
     # --- 詳細表示エリア ---
     if st.session_state.selected_report_id is not None:
