@@ -6,6 +6,15 @@ from db_utils import add_report, DateTimeEncoder # 必要な関数をインポ�
 
 st.set_page_config(page_title="過去データ報告", page_icon="📂", layout="wide")
 
+# --- 認証チェック ---
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.switch_page("pages/0_Login.py")
+
+# --- ロールベースのアクセス制御 ---
+if st.session_state.get("role") != "admin":
+    st.warning("このページにアクセスする権限がありません。管理者としてログインしてください。")
+    st.stop() # ページの実行を停止
+
 # --- 1. データとセッションステートの準備 --- 
 
 # --- デフォルト値の定義 ---

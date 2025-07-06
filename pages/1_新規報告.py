@@ -76,6 +76,9 @@ def init_session_state():
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+    # ログインユーザー名を報告者名のデフォルト値に設定
+    if 'reporter_name' not in st.session_state or not st.session_state.reporter_name:
+        st.session_state.reporter_name = st.session_state.get("username", "")
 
 # --- 下書き読み込み処理 (ウィジェット表示前に実行) ---
 if "loaded_draft" in st.session_state:

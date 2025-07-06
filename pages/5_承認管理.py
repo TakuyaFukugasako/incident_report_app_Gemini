@@ -197,11 +197,15 @@ else:
             if selected_report_details.get('ステータス') != '承認済み':
                 with st.form(key='approval_form_in_approval_page'):
                     st.markdown("<b>承認アクション</b>", unsafe_allow_html=True)
-                    approver_name = st.text_input("承認者名", placeholder="承認者名を入力してください")
+                    approver_name_display = st.session_state.get("username", "不明")
+                    st.markdown(f"**承認予定者名:** {approver_name_display}")
                     manager_comment_input = st.text_area("管理者フィードバック（任意）", value=selected_report_details.get('管理者コメント', ''))
                     if st.form_submit_button("承認する", use_container_width=True):
-                        if not approver_name:
-                            st.error("承認者名を入力してください。")
+                        approver_name = st.session_state.get("username", "不明なユーザー")
+                        
+                        # 同一ユーザーによる連続承認をチェック
+                        if selected_report_details.get('ステータス') == '承認中(1/2)' and selected_report_details.get('承認者1') == approver_name:
+                            st.warning(f"このレポートは既に {approver_name} によって承認されています。同一ユーザーによる連続承認はできません。")
                         else:
                             updates = {"manager_comments": manager_comment_input}
                             if selected_report_details.get('ステータス') == '未読':
