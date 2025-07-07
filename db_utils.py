@@ -271,7 +271,7 @@ def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
     # --- ここにCSVファイルの保存先パスを指定してください ---
     # 例: output_dir = "C:\Users\YourName\Documents\ApprovedReports"
     # 例: output_dir = os.path.join(os.path.expanduser("~"), "Desktop", "ApprovedReports") # デスクトップに保存する場合
-    output_dir = "C:\\Users\\user\\Desktop\\新しいフォルダー" # デフォルトはアプリケーション実行ディレクトリ内のapproved_reports
+    output_dir = "\\\\192.168.11.200\\share\\ネット端末共有\\インシデント・アクシデント報告\\CSV" # デフォルトはアプリケーション実行ディレクトリ内のapproved_reports
     # ---------------------------------------------------
     
     print(f"DEBUG: generate_and_save_report_csv: Determined output_dir: {output_dir}")
@@ -283,9 +283,16 @@ def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
         print(f"ERROR: generate_and_save_report_csv: Failed to create directory {output_dir}: {e}")
         return
 
-    # ファイル名に含めるためのタイムスタンプ
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"report_{report_data.get('id', 'unknown')}_{timestamp}.csv"
+    # ファイル名を発生日で生成
+    occurrence_date_str = "unknown_date"
+    if report_data.get('occurrence_datetime'):
+        try:
+            occurrence_dt = datetime.datetime.fromisoformat(report_data['occurrence_datetime'])
+            occurrence_date_str = occurrence_dt.strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            pass # 変換できない場合はデフォルト値を使用
+
+    filename = f"{occurrence_date_str}_report_{report_data.get('id', 'unknown')}.csv"
     filepath = os.path.join(output_dir, filename)
     print(f"DEBUG: generate_and_save_report_csv: Constructed filepath: {filepath}")
 
@@ -303,7 +310,7 @@ def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
         print("DEBUG: generate_and_save_report_pdf: report_data is empty.")
         return
 
-    output_dir = "C:\\Users\\user\\Desktop\\新しいフォルダー\\新しいフォルダー" # PDFの保存先パス
+    output_dir = "\\\\192.168.11.200\\share\\ネット端末共有\\インシデント・アクシデント報告\\レポート" # PDFの保存先パス
     # ユーザーごとのパス設定を考慮する場合は、generate_and_save_report_csvと同様のロジックを追加
 
     print(f"DEBUG: generate_and_save_report_pdf: Determined output_dir: {output_dir}")
@@ -315,9 +322,16 @@ def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
         print(f"ERROR: generate_and_save_report_pdf: Failed to create directory {output_dir}: {e}")
         return
 
-    # ファイル名に含めるためのタイムスタンプ
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"report_{report_data.get('id', 'unknown')}_{timestamp}.pdf"
+    # ファイル名を発生日で生成
+    occurrence_date_str = "unknown_date"
+    if report_data.get('occurrence_datetime'):
+        try:
+            occurrence_dt = datetime.datetime.fromisoformat(report_data['occurrence_datetime'])
+            occurrence_date_str = occurrence_dt.strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            pass # 変換できない場合はデフォルト値を使用
+
+    filename = f"{occurrence_date_str}_report_{report_data.get('id', 'unknown')}.pdf"
     filepath = os.path.join(output_dir, filename)
     print(f"DEBUG: generate_and_save_report_pdf: Constructed filepath: {filepath}")
 
