@@ -39,7 +39,7 @@ else:
         'patient_status_change_accident': '患者状態変化',
         'patient_status_change_patient_explanation': '患者への説明',
         'patient_status_change_family_explanation': '家族への説明',
-        'content_category': '内容分類',
+        'content_category': '大分類',
         'content_details': 'インシデント内容',
         'content_details_shinsatsu': '診察詳細',
         'content_details_shochi': '処置詳細',
@@ -92,9 +92,17 @@ else:
             with c4:
                 job_types = st.multiselect("職種", options=df['職種'].unique(), default=st.session_state.search_criteria.get('job_types', []))
             with c5:
-                content_categories = st.multiselect("内容分類", options=df['内容分類'].unique(), default=st.session_state.search_criteria.get('content_categories', []))
+                content_categories = st.multiselect("大分類", options=df['大分類'].unique(), default=st.session_state.search_criteria.get('content_categories', []))
             with c6:
-                content_details = st.text_input("インシデント内容", value=st.session_state.search_criteria.get('content_details'))
+                all_content_details = [
+                    "患者間違い", "オーダー間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達漏れ", "返却忘れ", "確認漏れ", "情報漏洩",
+                    "部位間違い", "ラベル間違い", "針刺し事故", "検体採り間違い", "不適切な前処置", "会計間違い", "郵送関係", "機器登録間違い", "マーカー間違い", 
+                    "骨密度解析間違い", "MRI室金属持ち込み", "画像転送忘れ", "左右間違い", "伝達間違い", "MRI完全吸着", "技師コメント間違い", "装置故障", "評価ミス", 
+                    "計画書関連", "リハビリ処方による受傷", "リハビリ中の軽微な事故", "転倒", "転落", "滑落", "外傷なし", "擦過傷", "表皮剥離", "打撲", "骨折",
+                    "接遇に対する不満", "検査・治療に対する不満", "医療費に対する不満", "待ち時間に対する不満", "設備・環境に対する不満", "電話対応に対する不満", 
+                    "患者間のトラブル", "破損", "故障", "不具合", "操作ミス", "盗難", "在庫不足", "発注ミス", "不審者", "施錠忘れ", "災害"
+                ]
+                content_details = st.multiselect("インシデント内容", options=sorted(list(set(all_content_details))), default=st.session_state.search_criteria.get('content_details', []))
 
             st.markdown("--- ")
             # 最終行: 全文キーワード
@@ -134,9 +142,21 @@ else:
     if criteria.get('job_types'):
         filtered_df = filtered_df[filtered_df['職種'].isin(criteria['job_types'])]
     if criteria.get('content_categories'):
-        filtered_df = filtered_df[filtered_df['内容分類'].isin(criteria['content_categories'])]
+        filtered_df = filtered_df[filtered_df['大分類'].isin(criteria['content_categories'])]
     if criteria.get('content_details'):
-        filtered_df = filtered_df[filtered_df['インシデント内容'].str.contains(criteria['content_details'], na=False)]
+        search_terms = criteria['content_details']
+        # 複数の詳細カラムを対象に、いずれかの検索語を含む行をフィルタリング
+        detail_columns = [
+            'インシデント内容', '診察詳細', '処置詳細', '受付詳細', '放射線業務詳細', 
+            'リハビリ業務詳細', '患者対応詳細', '物品破損詳細', '外傷詳細', 'その他外傷'
+        ]
+        # DataFrameの各行に対して、指定された検索語のいずれかが詳細カラムに含まれているかを確認
+        filtered_df = filtered_df[filtered_df.apply(
+            lambda row: any(
+                term in str(row[col]) for term in search_terms for col in detail_columns if pd.notna(row[col])
+            ), 
+            axis=1
+        )]
     if criteria.get('keyword'):
         kw = criteria['keyword']
         filtered_df = filtered_df[filtered_df.apply(lambda row: kw in str(row['状況詳細']) or kw in str(row['今後の対策']), axis=1)]
@@ -162,7 +182,7 @@ else:
 
     # --- 検索結果をテーブル表示 ---
     header_cols = st.columns([1, 3, 1, 2, 3, 3, 1, 1])
-    headers = ["ステータス", "発生日時", "職種", "発生場所", "内容分類", "報告者", "Lv.", ""]
+    headers = ["ステータス", "発生日時", "職種", "発生場所", "大分類", "報告者", "Lv.", ""]
     for col, header in zip(header_cols, headers):
         col.markdown(f"**{header}**")
     st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
