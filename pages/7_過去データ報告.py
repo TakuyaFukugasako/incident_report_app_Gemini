@@ -225,9 +225,9 @@ with st.form(key='report_form', clear_on_submit=False):
     with st.expander("内容（関連する箇所にチェック）", expanded=True):
         # 各カテゴリの詳細入力（キーをsession_stateと一致させる）
         if st.session_state.content_category == "診察":
-            st.multiselect("詳細", ["患者間違い", "オーダー間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達漏れ", "返却忘れ", "確認漏れ", "情報漏洩"], key="content_details_shinsatsu")
+            st.multiselect("詳細", ["患者間違い", "オーダー間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達漏れ", "返却忘れ", "確認漏れ", "情報漏洩", "未処置帰宅"], key="content_details_shinsatsu")
         elif st.session_state.content_category == "処置":
-            st.multiselect("詳細", ["患者間違い", "部位間違い", "案内間違い", "カルテ記載間違い", "確認漏れ", "伝達漏れ", "ラベル間違い", "針刺し事故", "検体採り間違い", "不適切な前処置"], key="content_details_shochi")
+            st.multiselect("詳細", ["患者間違い", "部位間違い", "案内間違い", "カルテ記載間違い", "確認漏れ", "伝達漏れ", "ラベル間違い", "針刺し事故", "検体採り間違い", "不適切な前処置", "未処置帰宅", "薬液間違い"], key="content_details_shochi")
         elif st.session_state.content_category == "受付":
             st.multiselect("詳細", ["患者間違い", "予約間違い", "案内間違い", "紛失", "カルテ記載間違い", "伝達漏れ", "返却忘れ", "確認漏れ", "情報漏洩", "会計間違い", "郵送関係"], key="content_details_uketsuke")
         elif st.session_state.content_category == "放射線業務":
