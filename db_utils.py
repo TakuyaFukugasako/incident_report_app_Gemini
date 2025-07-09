@@ -399,6 +399,26 @@ def get_all_reports():
         df = pd.read_sql("SELECT * FROM reports ORDER BY occurrence_datetime DESC", conn, index_col='id')
         return df
 
+def update_report(report_id: int, data: dict):
+    """指定されたIDのレポートを更新します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        set_clauses = [f"{key} = ?" for key in data.keys()]
+        sql = f"UPDATE reports SET {', '.join(set_clauses)} WHERE id = ?"
+        
+        values = list(data.values())
+        values.append(report_id)
+        
+        cursor.execute(sql, tuple(values))
+        conn.commit()
+
+def delete_report(report_id: int):
+    """指定されたIDのレポートを削除します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM reports WHERE id = ?", (report_id,))
+        conn.commit()
+
 # --- ユーザー管理関連 ---
 
 def get_all_users():
