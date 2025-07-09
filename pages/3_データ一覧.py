@@ -303,31 +303,7 @@ else:
             e2.markdown(detail_item_html("患者への説明", report_details.get('患者への説明', '-'), highlight=report_details.get('患者への説明') == '有'), unsafe_allow_html=True)
             e3.markdown(detail_item_html("家族への説明", report_details.get('家族への説明', '-'), highlight=report_details.get('家族への説明') == '有'), unsafe_allow_html=True)
 
-            st.markdown(section_header("原因分析とマニュアル"), unsafe_allow_html=True)
-            def format_cause_details(cause_details_str):
-                if not cause_details_str or cause_details_str == '-': return '-'
-                html = ""
-                for cat_item in cause_details_str.split(' | '):
-                    if '： ' in cat_item: # ここも全角コロンに
-                        cat, items = cat_item.split('： ', 1)
-                        html += f"<div style='margin-bottom: 5px;'><b>{cat}：</b><ul style='margin: 0; padding-left: 20px;'>"
-                        for item in items.split(', '): html += f"<li>{item}</li>"
-                        html += "</ul></div>"
-                    else:
-                        html += f"<li>{cat_item}</li>" # Fallback for unexpected format
-                return html
-            st.markdown(detail_block_html("発生原因", format_cause_details(report_details.get('発生原因', '-'))), unsafe_allow_html=True)
-            st.markdown(detail_item_html("マニュアル関連", report_details.get('マニュアル関連', '-')), unsafe_allow_html=True)
-
-            # --- 承認ワークフローの表示（アクションなし） ---
-            st.markdown(section_header("承認ワークフロー"), unsafe_allow_html=True)
-            wf1, wf2 = st.columns(2)
-            wf1.markdown(detail_item_html("ステータス", report_details.get('ステータス', '-'), highlight=True), unsafe_allow_html=True)
-            wf1.markdown(detail_item_html("承認者1", report_details.get('承認者1', '-')), unsafe_allow_html=True)
-            wf2.markdown(detail_item_html("承認日時1", pd.to_datetime(report_details.get('承認日時1')).strftime('%Y-%m-%d %H:%M') if pd.notna(report_details.get('承認日時1')) else '-'), unsafe_allow_html=True)
-            wf1.markdown(detail_item_html("承認者2", report_details.get('承認者2', '-')), unsafe_allow_html=True)
-            wf2.markdown(detail_item_html("承認日時2", pd.to_datetime(report_details.get('承認日時2')).strftime('%Y-%m-%d %H:%M') if pd.notna(report_details.get('承認日時2')) else '-'), unsafe_allow_html=True)
-            st.markdown(detail_block_html("管理者コメント", report_details.get('管理者コメント', '-')), unsafe_allow_html=True)
+            
 
             st.markdown(section_header("原因分析とマニュアル"), unsafe_allow_html=True)
             def format_cause_details(cause_details_str):
