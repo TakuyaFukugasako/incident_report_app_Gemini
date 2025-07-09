@@ -251,15 +251,12 @@ def verify_password(plain_password, hashed_password):
 
 # --- レポート関連 ---
 
-def get_report_by_id(report_id: int) -> dict | None:
-    """指定されたIDのレポートを取得します"""
+def get_report_by_id(report_id: int):
+    """IDで特定のインシデント報告を取得します"""
     with get_db_connection() as conn:
-        conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM reports WHERE id = ?", (report_id,))
-        report_data = cursor.fetchone()
-        if report_data:
-            return dict(report_data)
+        df = pd.read_sql("SELECT * FROM reports WHERE id = ?", conn, params=(report_id,))
+        if not df.empty:
+            return df.iloc[0].to_dict()
         return None
 
 def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
