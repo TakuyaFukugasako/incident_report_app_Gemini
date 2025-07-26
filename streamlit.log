@@ -1,0 +1,331 @@
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+2025-07-22 08:20:46.984 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\7_過去データ報告.py", line 206, in <module>
+    col_change_radio.radio("", ["有", "無"], key="patient_status_change_accident", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-22 08:20:47.004 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\7_過去データ報告.py", line 210, in <module>
+    col_patient_radio.radio("", ["有", "無"], key="patient_status_change_patient_explanation", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-22 08:20:47.006 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\7_過去データ報告.py", line 214, in <module>
+    col_family_radio.radio("", ["有", "無"], key="patient_status_change_family_explanation", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+2025-07-24 09:31:42.880 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\1_新規報告.py", line 217, in <module>
+    col_change_radio.radio("", ["有", "無"], key="patient_status_change_accident", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-24 09:31:42.888 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\1_新規報告.py", line 221, in <module>
+    col_patient_radio.radio("", ["有", "無"], key="patient_status_change_patient_explanation", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-24 09:31:42.891 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\1_新規報告.py", line 225, in <module>
+    col_family_radio.radio("", ["有", "無"], key="patient_status_change_family_explanation", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-24 09:34:45.855 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\7_過去データ報告.py", line 206, in <module>
+    col_change_radio.radio("", ["有", "無"], key="patient_status_change_accident", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-24 09:34:45.863 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\7_過去データ報告.py", line 210, in <module>
+    col_patient_radio.radio("", ["有", "無"], key="patient_status_change_patient_explanation", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+2025-07-24 09:34:45.867 `label` got an empty value. This is discouraged for accessibility reasons and may be disallowed in the future by raising an exception. Please provide a non-empty label and hide it with label_visibility if needed.
+Stack (most recent call last):
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1014, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 1043, in _bootstrap_inner
+    self.run()
+  File "C:\Users\user\AppData\Local\Programs\Python\Python313\Lib\threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 378, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 685, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 128, in exec_func_with_error_handling
+    result = func()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 667, in code_to_exec
+    _mpa_v1(self._main_script_path)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 165, in _mpa_v1
+    page.run()
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\navigation\page.py", line 300, in run
+    exec(code, module.__dict__)  # noqa: S102
+  File "C:\code\incident_report_app_Gemini\pages\7_過去データ報告.py", line 214, in <module>
+    col_family_radio.radio("", ["有", "無"], key="patient_status_change_family_explanation", horizontal=True, label_visibility="collapsed")
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 443, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 315, in radio
+    return self._radio(
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\widgets\radio.py", line 360, in _radio
+    maybe_raise_label_warnings(label, label_visibility)
+  File "C:\code\incident_report_app_Gemini\venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 184, in maybe_raise_label_warnings
+    _LOGGER.warning(
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.11.43:8501
+  External URL: http://180.30.183.246:8501
+

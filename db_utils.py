@@ -1,8 +1,14 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
+import os
+import shutil
 import datetime
 import json
+import time
+import jwt
+import requests
+from dotenv import load_dotenv
 import bcrypt # bcryptライブラリをインポート
 import os # 環境変数を読み込むためにosモジュールをインポート
 from weasyprint import HTML # PDF生成のためにWeasyPrintをインポート
@@ -249,6 +255,173 @@ def verify_password(plain_password, hashed_password):
     """平文パスワードとハッシュ化されたパスワードを比較して検証します。"""
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
+def get_lineworks_access_token():
+    """Line Works APIのアクセストークンを取得します"""
+    load_dotenv()
+    consumer_key = os.getenv("LINEWORKS_SERVER_API_CONSUMER_KEY")
+    client_secret = os.getenv("LINEWORKS_CLIENT_SECRET")
+    service_account = os.getenv("LINEWORKS_SERVICE_ACCOUNT")
+    private_key_path = os.getenv("LINEWORKS_PRIVATE_KEY_PATH")
+
+    if not all([consumer_key, client_secret, service_account, private_key_path]):
+        print("ERROR: Line Worksの認証情報(CONSUMER_KEY, CLIENT_SECRET, SERVICE_ACCOUNT, PRIVATE_KEY_PATH)が.envファイルに設定されていません。")
+        return None
+
+    try:
+        with open(private_key_path, 'r') as f:
+            private_key = f.read()
+        print(f"DEBUG: .envから認証情報を読み込み、秘密鍵を '{private_key_path}' から読み込みました。")
+    except FileNotFoundError:
+        print(f"ERROR: 秘密鍵ファイルが見つかりません: {private_key_path}")
+        return None
+    except Exception as e:
+        print(f"ERROR: 秘密鍵ファイルの読み込み中にエラーが発生しました: {e}")
+        return None
+
+    # JWTの生成
+    payload = {
+        "iss": consumer_key,
+        "sub": service_account,
+        "iat": int(time.time()),
+        "exp": int(time.time()) + 3600  # 1時間有効
+    }
+    
+    try:
+        token = jwt.encode(payload, private_key, algorithm="RS256")
+        print(f"DEBUG: JWTを生成しました: {token[:30]}...")
+    except Exception as e:
+        print(f"ERROR: JWTの生成に失敗しました: {e}")
+        return None
+
+    # アクセストークンのリクエスト
+    url = "https://auth.worksmobile.com/oauth2/v2.0/token"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    data = {
+        "assertion": token,
+        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        "client_id": consumer_key,
+        "client_secret": client_secret,
+        "scope": "bot bot.message file"  # 必要なスコープをスペースで区切って指定
+    }
+    
+    print(f"DEBUG: アクセストークンをリクエストします。URL: {url}")
+    
+    try:
+        response = requests.post(url, headers=headers, data=data)
+        response.raise_for_status() # エラーがあれば例外を発生
+        access_token = response.json().get("access_token")
+        print(f"DEBUG: アクセストークンを取得しました: {access_token[:15]}...")
+        return access_token
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Line Worksのアクセストークン取得に失敗しました: {e}")
+        print(f"Response Status: {response.status_code}, Response Body: {response.text}")
+        return None
+
+def upload_file_to_lineworks(access_token, file_path):
+    """Line WorksにファイルをアップロードしてfileIdを取得します (2ステップ方式)"""
+    load_dotenv()
+    bot_no = os.getenv("LINEWORKS_BOT_NO")
+    if not bot_no:
+        print("ERROR: LINEWORKS_BOT_NOが.envファイルに設定されていません。")
+        return None
+
+    # --- ステップ1: アップロードURLとfileIdの取得 ---
+    init_url = f"https://www.worksapis.com/v1.0/bots/{bot_no}/attachments"
+    headers_init = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    try:
+        file_name = os.path.basename(file_path)
+        file_size = os.path.getsize(file_path)
+    except FileNotFoundError:
+        print(f"ERROR: アップロードするファイルが見つかりません: {file_path}")
+        return None
+
+    data_init = {
+        "fileName": file_name,
+        "fileSize": file_size
+    }
+
+    print(f"DEBUG: [ステップ1] アップロードを初期化します。URL: {init_url}, Data: {json.dumps(data_init)}")
+    
+    try:
+        response_init = requests.post(init_url, headers=headers_init, json=data_init)
+        response_init.raise_for_status()
+        response_data = response_init.json()
+        upload_url = response_data.get("uploadUrl")
+        file_id = response_data.get("fileId")
+        if not upload_url or not file_id:
+            print(f"ERROR: uploadUrlまたはfileIdの取得に失敗しました。Response: {response_data}")
+            return None
+        print(f"DEBUG: [ステップ1] 成功。uploadUrlとfileIdを取得しました。fileId: {file_id}")
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: [ステップ1] アップロード初期化に失敗しました: {e}")
+        print(f"Response Status: {response_init.status_code}, Response Body: {response_init.text}")
+        return None
+
+    # --- ステップ2: ファイルコンテンツのアップロード ---
+    headers_upload = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/pdf"
+    }
+    print(f"DEBUG: [ステップ2] ファイルコンテンツをアップロードします。URL: {upload_url}")
+    
+    try:
+        with open(file_path, 'rb') as f:
+            response_upload = requests.put(upload_url, headers=headers_upload, data=f)
+            response_upload.raise_for_status()
+        print(f"DEBUG: [ステップ2] ファイルコンテンツのアップロードに成功しました。")
+        return file_id # 最終的にfileIdを返す
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: [ステップ2] ファイルコンテンツのアップロードに失敗しました: {e}")
+        print(f"Response Status: {response_upload.status_code}, Response Body: {response_upload.text}")
+        return None
+
+def post_report_to_lineworks(report_data, pdf_path):
+    """レポートのPDFをLine Works Botに投稿します"""
+    load_dotenv()
+    bot_no = os.getenv("LINEWORKS_BOT_NO")
+    room_id = os.getenv("LINEWORKS_ROOM_ID")
+
+    if not all([bot_no, room_id]):
+        print("ERROR: Line WorksのBot NoまたはRoom IDが.envファイルに設定されていません。")
+        return
+
+    access_token = get_lineworks_access_token()
+    if not access_token:
+        return
+
+    file_id = upload_file_to_lineworks(access_token, pdf_path)
+    if not file_id:
+        return
+
+    # メッセージの送信
+    url = f"https://www.worksapis.com/v1.0/bots/{bot_no}/rooms/{room_id}/messages"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    }
+    message_content = f"【新規承認レポート】\nレポートID: {report_data.get('id')}\n発生日時: {report_data.get('occurrence_datetime')}\n報告者: {report_data.get('reporter_name')}\n影響度レベル: {report_data.get('level')}\n\n詳細は添付のPDFファイルをご確認ください。"
+    
+    data = {
+        "content": {
+            "type": "text",
+            "text": message_content
+        },
+        "fileIds": [file_id]
+    }
+
+    print(f"DEBUG: メッセージを投稿します。URL: {url}, Data: {json.dumps(data, indent=2)}")
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        print("Line Worksへのレポート投稿に成功しました。")
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Line Worksへのメッセージ投稿に失敗しました: {e}")
+        print(f"Response Status: {response.status_code}, Response Body: {response.text}")
+
 # --- レポート関連 ---
 
 def get_report_by_id(report_id: int):
@@ -338,6 +511,8 @@ def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
     try:
         HTML(string=html_content).write_pdf(filepath)
         print(f"DEBUG: PDFレポートを保存しました: {filepath}")
+        # Line Worksへの投稿処理を呼び出す
+        post_report_to_lineworks(report_data, filepath)
     except Exception as e:
         print(f"ERROR: generate_and_save_report_pdf: Failed to save PDF to {filepath}: {e}")
 
