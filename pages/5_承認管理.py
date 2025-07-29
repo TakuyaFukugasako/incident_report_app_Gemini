@@ -214,6 +214,7 @@ else:
                                 updates.update({'status': '承認済み', 'approver2': approver_name, 'approved_at2': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))})
                             update_report_status(st.session_state.selected_approval_report_id, updates, approver_id=st.session_state.get('id'))
                             st.success("承認状態を更新しました。")
+                            st.session_state.selected_approval_report_id = None # 承認後、選択状態をリセット
                             st.rerun()
 
             st.markdown("</div>", unsafe_allow_html=True)
