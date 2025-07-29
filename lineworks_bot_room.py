@@ -59,12 +59,13 @@ def _send_bot_message_to_channel(content, bot_id, channel_id, access_token):
 
 # --- 外部呼び出し用の公開関数 ---
 
-def send_file_to_channel(file_path: str, channel_id: str):
+def send_file_to_channel(file_path: str, channel_id: str, bot_id: str = None):
     """
     指定されたファイルを指定されたチャンネル（トークルーム）に送信する。
     Args:
         file_path (str): 送信するファイルのパス。
         channel_id (str): 送信先のチャンネルID。
+        bot_id (str, optional): 使用するBotのID。指定しない場合は環境変数から読み込む。
     Returns:
         bool: 成功した場合はTrue、失敗した場合はFalse。
     """
@@ -75,12 +76,14 @@ def send_file_to_channel(file_path: str, channel_id: str):
         client_secret = os.environ.get("LW_API_20_CLIENT_SECRET")
         service_account_id = os.environ.get("LW_API_20_SERVICE_ACCOUNT_ID")
         privatekey_raw = os.environ.get("LW_API_20_PRIVATEKEY")
-        bot_id = os.environ.get("LW_API_20_BOT_ID")
         
-        if not all([client_id, client_secret, service_account_id, privatekey_raw, bot_id]):
-            raise ValueError("必要な環境変数が設定されていません。")
+        # bot_idが引数で指定されていない場合は環境変数から読み込む
+        actual_bot_id = bot_id if bot_id else os.environ.get("LW_API_20_BOT_ID")
         
-        privatekey = privatekey_raw.replace('\\n', '\n')
+        if not all([client_id, client_secret, service_account_id, privatekey_raw, actual_bot_id]):
+            raise ValueError("必要な環境変数が設定されていないか、Bot IDが指定されていません。")
+        
+        privatekey = privatekey_raw.replace('\n', '\n')
 
         # 1. アクセストークン取得
         print("1. アクセストークンを取得中...")
@@ -114,12 +117,13 @@ def send_file_to_channel(file_path: str, channel_id: str):
         print(f"エラーが発生しました: {e}")
         return False
 
-def send_text_message_to_channel(text_message: str, channel_id: str):
+def send_text_message_to_channel(text_message: str, channel_id: str, bot_id: str = None):
     """
     指定されたテキストメッセージを指定されたチャンネル（トークルーム）に送信する。
     Args:
         text_message (str): 送信するテキストメッセージ。
         channel_id (str): 送信先のチャンネルID。
+        bot_id (str, optional): 使用するBotのID。指定しない場合は環境変数から読み込む。
     Returns:
         bool: 成功した場合はTrue、失敗した場合はFalse。
     """
@@ -130,12 +134,14 @@ def send_text_message_to_channel(text_message: str, channel_id: str):
         client_secret = os.environ.get("LW_API_20_CLIENT_SECRET")
         service_account_id = os.environ.get("LW_API_20_SERVICE_ACCOUNT_ID")
         privatekey_raw = os.environ.get("LW_API_20_PRIVATEKEY")
-        bot_id = os.environ.get("LW_API_20_BOT_ID")
         
-        if not all([client_id, client_secret, service_account_id, privatekey_raw, bot_id]):
-            raise ValueError("必要な環境変数が設定されていません。")
+        # bot_idが引数で指定されていない場合は環境変数から読み込む
+        actual_bot_id = bot_id if bot_id else os.environ.get("LW_API_20_BOT_ID")
         
-        privatekey = privatekey_raw.replace('\\n', '\n')
+        if not all([client_id, client_secret, service_account_id, privatekey_raw, actual_bot_id]):
+            raise ValueError("必要な環境変数が設定されていないか、Bot IDが指定されていません。")
+        
+        privatekey = privatekey_raw.replace('\n', '\n')
 
         # 1. アクセストークン取得
         print("1. アクセストークンを取得中...")

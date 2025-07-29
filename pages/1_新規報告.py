@@ -2,7 +2,17 @@ import streamlit as st
 import pandas as pd
 import datetime
 import json
+import os
+from dotenv import load_dotenv
 from db_utils import add_report, add_draft, delete_draft, DateTimeEncoder # 必要な関数をインポート
+from lineworks_bot_room import send_text_message_to_channel # LINE WORKS Botの関数をインポート
+
+# .envファイルを読み込む
+load_dotenv()
+
+# LINE WORKSのチャンネルIDを取得
+LINEWORKS_CHANNEL_ID = os.environ.get("LW_API_20_APPROVAL_CHANNEL_ID")
+LINEWORKS_BOT_ID = os.environ.get("LW_API_20_APPROVAL_BOT_ID")
 
 # --- 認証チェック ---
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
@@ -358,6 +368,21 @@ if submit_button:
         if st.session_state.get('loaded_draft_id'):
             delete_draft(st.session_state.loaded_draft_id)
             del st.session_state['loaded_draft_id']
+
+        # LINE WORKSに通知を送信
+        if LINEWORKS_CHANNEL_ID:
+            message = (
+                f"【新規インシデント報告】\n\n"
+                f"報告者: {new_data['reporter_name']}\n"
+                f"発生日時: {new_data['occurrence_datetime'].strftime('%Y-%m-%d %H:%M')}\n"
+                f"影響度レベル: {new_data['level']}\n"
+                f"内容分類: {new_data['content_category']}\n"
+                f"インシデント内容: {new_data['content_details']}\n\n"
+                f"承認管理ページにて承認作業をお願いいたします。"
+            )
+            send_text_message_to_channel(message, LINEWORKS_CHANNEL_ID, bot_id=LINEWORKS_BOT_ID)
+        else:
+            st.warning("LINE WORKSのチャンネルIDが設定されていないため、通知は送信されませんでした。")
 
         for key in defaults.keys():
             if key in st.session_state:

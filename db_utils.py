@@ -5,10 +5,14 @@ import datetime
 import json
 import bcrypt # bcryptライブラリをインポート
 import os # 環境変数を読み込むためにosモジュールをインポート
+from dotenv import load_dotenv
 from weasyprint import HTML # PDF生成のためにWeasyPrintをインポート
 
 # LINE WORKS Botモジュールをインポート
 from lineworks_bot_room import send_file_to_channel, send_text_message_to_channel
+
+# .envファイルを読み込む
+load_dotenv()
 
 # --- HTMLテンプレートの定義 ---
 HTML_TEMPLATE = """
@@ -347,22 +351,25 @@ def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
         print(f"DEBUG: PDFレポートを保存しました: {filepath}")
 
         # --- LINE WORKSへの自動投稿 --- ここから追加
-        channel_id = os.environ.get("LW_API_20_CHANNEL_ID")
-        if channel_id:
+        # 環境変数からBot IDとチャンネルIDを読み込み、strip()で空白を除去
+        channel_id = os.environ.get("LW_API_20_CHANNEL_ID").strip() if os.environ.get("LW_API_20_CHANNEL_ID") else None
+        bot_id = os.environ.get("LW_API_20_BOT_ID").strip() if os.environ.get("LW_API_20_BOT_ID") else None
+
+        if channel_id and bot_id:
             # 事前メッセージを送信
             current_time_jst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
             pre_message = f"{current_time_jst}\n新しいインシデント報告が投稿されました。ご確認お願いいたします。"
             print(f"DEBUG: LINE WORKSチャンネル ({channel_id}) に事前メッセージを送信します...")
-            send_text_message_to_channel(text_message=pre_message, channel_id=channel_id)
+            send_text_message_to_channel(text_message=pre_message, channel_id=channel_id, bot_id=bot_id)
 
             print(f"DEBUG: LINE WORKSチャンネル ({channel_id}) にPDFを自動投稿します...")
-            success = send_file_to_channel(file_path=filepath, channel_id=channel_id)
+            success = send_file_to_channel(file_path=filepath, channel_id=channel_id, bot_id=bot_id)
             if success:
                 print("DEBUG: LINE WORKSへの投稿に成功しました。")
             else:
                 print("DEBUG: LINE WORKSへの投稿に失敗しました。")
         else:
-            print("DEBUG: LW_API_20_CHANNEL_IDが設定されていないため、LINE WORKSへの投稿をスキップします。")
+            print("DEBUG: LW_API_20_CHANNEL_IDまたはLW_API_20_BOT_IDが設定されていないため、LINE WORKSへの投稿をスキップします。")
         # --- LINE WORKSへの自動投稿 --- ここまで追加
 
     except Exception as e:
