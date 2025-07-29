@@ -312,7 +312,7 @@ def generate_and_save_report_csv(report_data: dict, approver_id: int = None):
     except Exception as e:
         print(f"ERROR: generate_and_save_report_csv: Failed to save CSV to {filepath}: {e}")
 
-def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
+def generate_and_save_report_pdf(report_data: dict, approver_id: int = None, send_notification: bool = True):
     """レポートデータをPDF形式で生成し、ファイルとして保存します"""
     if not report_data:
         print("DEBUG: generate_and_save_report_pdf: report_data is empty.")
@@ -350,27 +350,28 @@ def generate_and_save_report_pdf(report_data: dict, approver_id: int = None):
         HTML(string=html_content).write_pdf(filepath)
         print(f"DEBUG: PDFレポートを保存しました: {filepath}")
 
-        # --- LINE WORKSへの自動投稿 --- ここから追加
-        # 環境変数からBot IDとチャンネルIDを読み込み、strip()で空白を除去
-        channel_id = os.environ.get("LW_API_20_CHANNEL_ID").strip() if os.environ.get("LW_API_20_CHANNEL_ID") else None
-        bot_id = os.environ.get("LW_API_20_BOT_ID").strip() if os.environ.get("LW_API_20_BOT_ID") else None
+        if send_notification:
+            # --- LINE WORKSへの自動投稿 --- ここから追加
+            # 環境変数からBot IDとチャンネルIDを読み込み、strip()で空白を除去
+            channel_id = os.environ.get("LW_API_20_CHANNEL_ID").strip() if os.environ.get("LW_API_20_CHANNEL_ID") else None
+            bot_id = os.environ.get("LW_API_20_BOT_ID").strip() if os.environ.get("LW_API_20_BOT_ID") else None
 
-        if channel_id and bot_id:
-            # 事前メッセージを送信
-            current_time_jst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
-            pre_message = f"{current_time_jst}\n新しいインシデント報告が投稿されました。ご確認お願いいたします。"
-            print(f"DEBUG: LINE WORKSチャンネル ({channel_id}) に事前メッセージを送信します...")
-            send_text_message_to_channel(text_message=pre_message, channel_id=channel_id, bot_id=bot_id)
+            if channel_id and bot_id:
+                # 事前メッセージを送信
+                current_time_jst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).strftime("%Y-%m-%d %H:%M:%S")
+                pre_message = f"{current_time_jst}\n新しいインシデント報告が投稿されました。ご確認お願いいたします。"
+                print(f"DEBUG: LINE WORKSチャンネル ({channel_id}) に事前メッセージを送信します...")
+                send_text_message_to_channel(text_message=pre_message, channel_id=channel_id, bot_id=bot_id)
 
-            print(f"DEBUG: LINE WORKSチャンネル ({channel_id}) にPDFを自動投稿します...")
-            success = send_file_to_channel(file_path=filepath, channel_id=channel_id, bot_id=bot_id)
-            if success:
-                print("DEBUG: LINE WORKSへの投稿に成功しました。")
+                print(f"DEBUG: LINE WORKSチャンネル ({channel_id}) にPDFを自動投稿します...")
+                success = send_file_to_channel(file_path=filepath, channel_id=channel_id, bot_id=bot_id)
+                if success:
+                    print("DEBUG: LINE WORKSへの投稿に成功しました。")
+                else:
+                    print("DEBUG: LINE WORKSへの投稿に失敗しました。")
             else:
-                print("DEBUG: LINE WORKSへの投稿に失敗しました。")
-        else:
-            print("DEBUG: LW_API_20_CHANNEL_IDまたはLW_API_20_BOT_IDが設定されていないため、LINE WORKSへの投稿をスキップします。")
-        # --- LINE WORKSへの自動投稿 --- ここまで追加
+                print("DEBUG: LW_API_20_CHANNEL_IDまたはLW_API_20_BOT_IDが設定されていないため、LINE WORKSへの投稿をスキップします。")
+            # --- LINE WORKSへの自動投稿 --- ここまで追加
 
     except Exception as e:
         print(f"ERROR: generate_and_save_report_pdf: Failed to save PDF to {filepath}: {e}")
@@ -401,7 +402,7 @@ def add_report(data: dict, status: str = '未読', created_at: datetime.datetime
             report = get_report_by_id(report_id)
             if report:
                 generate_and_save_report_csv(report, approver_id=None) # 過去データ報告からの追加なのでapprover_idはNone
-                generate_and_save_report_pdf(report, approver_id=None) # PDFも生成
+                generate_and_save_report_pdf(report, approver_id=None, send_notification=False) # PDFも生成
 
 def update_report_status(report_id: int, updates: dict, approver_id: int = None):
     """指定されたIDのレポートのステータスや承認者情報を更新します"""
@@ -421,7 +422,7 @@ def update_report_status(report_id: int, updates: dict, approver_id: int = None)
             report = get_report_by_id(report_id)
             if report:
                 generate_and_save_report_csv(report, approver_id)
-                generate_and_save_report_pdf(report, approver_id) # PDFも生成
+                generate_and_save_report_pdf(report, approver_id, send_notification=True) # PDFも生成
 
 def get_all_reports():
     """全てのインシデント報告を取得します"""
