@@ -16,7 +16,7 @@ st.set_page_config(page_title="新規報告", page_icon="✍️", layout="wide")
 defaults = {
     'level': "1",
     'occurrence_date': datetime.date.today(),
-    'occurrence_time': datetime.datetime.now().time(),
+    'occurrence_time': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).time(),
     'reporter_name': "",
     'job_type': "Dr",
     'connection_with_accident': [],
@@ -222,7 +222,7 @@ with st.form(key='report_form', clear_on_submit=False):
 
         col_family, col_family_radio = st.columns([3, 1])
         col_family.write("家族への説明")
-        col_family_radio.radio("", ["有", "無"], key="patient_status_change_family_explanation", horizontal=True, label_visibility="collapsed")
+        col_family_radio.radio(" ", ["有", "無"], key="patient_status_change_family_explanation", horizontal=True, label_visibility="collapsed")
 
     st.markdown("--- ")
     st.subheader("状況と対策")

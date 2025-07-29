@@ -21,7 +21,7 @@ if st.session_state.get("role") != "admin":
 defaults = {
     'level': "1",
     'occurrence_date': datetime.date.today(),
-    'occurrence_time': datetime.datetime.now().time(),
+    'occurrence_time': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).time(),
     'reporter_name': "",
     'job_type': "Dr",
     'connection_with_accident': [],
@@ -66,7 +66,7 @@ defaults = {
     "cause_発生時の状況_other": "",
     'manual_relation': "手順に従っていた",
     'report_created_date': datetime.date.today(), # 過去データ報告用に追加
-    'report_created_time': datetime.datetime.now().time() # 過去データ報告用に追加
+    'report_created_time': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).time() # 過去データ報告用に追加
 }
 
 # --- 原因選択肢の定義 ---

@@ -209,9 +209,9 @@ else:
                         else:
                             updates = {"manager_comments": manager_comment_input}
                             if selected_report_details.get('ステータス') == '未読':
-                                updates.update({'status': '承認中(1/2)', 'approver1': approver_name, 'approved_at1': datetime.datetime.now()})
+                                updates.update({'status': '承認中(1/2)', 'approver1': approver_name, 'approved_at1': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))})
                             elif selected_report_details.get('ステータス') == '承認中(1/2)':
-                                updates.update({'status': '承認済み', 'approver2': approver_name, 'approved_at2': datetime.datetime.now()})
+                                updates.update({'status': '承認済み', 'approver2': approver_name, 'approved_at2': datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))})
                             update_report_status(st.session_state.selected_approval_report_id, updates, approver_id=st.session_state.get('id'))
                             st.success("承認状態を更新しました。")
                             st.rerun()
