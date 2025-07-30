@@ -378,7 +378,8 @@ if submit_button:
                 f"影響度レベル: {new_data['level']}\n"
                 f"内容分類: {new_data['content_category']}\n"
                 f"インシデント内容: {new_data['content_details']}\n\n"
-                f"承認管理ページにて承認作業をお願いいたします。"
+                f"以下のリンクから承認管理ページにアクセスしてください。\n"
+                f"https://incident.kco-sports.com/"
             )
             send_text_message_to_channel(message, LINEWORKS_CHANNEL_ID, bot_id=LINEWORKS_BOT_ID)
         else:

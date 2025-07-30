@@ -5,6 +5,7 @@ import datetime
 
 # --- 認証チェック ---
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.session_state.post_login_redirect_page = "pages/5_承認管理.py"
     st.switch_page("pages/0_Login.py")
 
 # --- ロールベースのアクセス制御 ---

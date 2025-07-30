@@ -20,7 +20,10 @@ with st.form(key='login_form'):
             st.session_state.username = user['username']
             st.session_state.role = user['role']
             st.success(f"ようこそ、{user['username']}さん！")
-            st.switch_page("app.py") # ログイン成功後、メインページへリダイレクト
+            
+            # リダイレクト先のページを確認
+            redirect_page = st.session_state.pop('post_login_redirect_page', "app.py")
+            st.switch_page(redirect_page)
         else:
             st.error("ユーザー名またはパスワードが間違っています。")
 
