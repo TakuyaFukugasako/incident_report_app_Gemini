@@ -35,3 +35,9 @@ st.markdown("--- ")
 st.header(f"ようこそ！ {st.session_state.username}さん")
 st.write("このシステムは、院内で発生したインシデント・アクシデントを報告・管理するためのものです。")
 st.write("左のサイドバーからメニューを選択してください。")
+
+st.markdown("--- ")
+st.subheader("📖 操作マニュアル")
+st.write("アプリケーションの操作方法については、以下のマニュアルを参照してください。")
+if st.button("操作マニュアルを開く"):
+    st.switch_page("pages/9_マニュアル.py")
