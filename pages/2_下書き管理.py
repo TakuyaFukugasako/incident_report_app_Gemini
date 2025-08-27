@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
-from db_utils import get_all_drafts, delete_draft
+from db_utils import get_all_drafts, delete_draft, generate_draft_pdf_bytes
 
 # --- 認証チェック ---
 if "logged_in" not in st.session_state or not st.session_state.logged_in:
@@ -29,7 +29,7 @@ else:
             reporter_name = draft_data.get('reporter_name', '氏名未入力') # .get()で安全に取得
 
             st.markdown(f"#### {row['title']}")
-            col1, col2, col3 = st.columns([3, 2, 1])
+            col1, col2, col_pdf, col3 = st.columns([3, 2, 1, 1]) # col_pdfを追加
             with col1:
                 st.write(f"*保存日時: {pd.to_datetime(row['created_at']).strftime('%Y-%m-%d %H:%M')}*")
                 # 報告者名を表示（空の場合は「氏名未入力」）
@@ -42,6 +42,16 @@ else:
                     st.session_state.loaded_draft_id = row['id'] # ★ 下書きのIDも保存
                     # 新規報告ページに切り替え
                     st.switch_page("pages/1_新規報告.py")
+            with col_pdf: # 新しいカラムにPDF出力ボタンを追加
+                pdf_bytes = generate_draft_pdf_bytes(draft_data, row['title'], row['created_at'])
+                st.download_button(
+                    label="📄 PDF出力",
+                    data=pdf_bytes,
+                    file_name=f"{row['title']}.pdf",
+                    mime="application/pdf",
+                    key=f"pdf_{row['id']}",
+                    use_container_width=True
+                )
             with col3:
                 # 削除ボタン
                 if st.button("❌ 削除", key=f"delete_{row['id']}", use_container_width=True):

@@ -509,6 +509,126 @@ def delete_draft(draft_id: int):
         cursor.execute("DELETE FROM drafts WHERE id = ?", (draft_id,))
         conn.commit()
 
+# --- 下書き用HTMLテンプレートの定義 ---
+DRAFT_HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>インシデント報告書（下書き）</title>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.4; /* 行間を詰める */ color: #333; margin: 10px; /* 余白を減らす */ background-color: #f4f4f4; font-size: 12px; /* フォントサイズを小さく */ }}
+        .container {{ max-width: 780px; /* 幅を少し狭める */ margin: auto; background: #fff; padding: 20px; /* パディングを減らす */ border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        h1, h2, h3 {{ color: #0056b3; border-bottom: 1px solid #eee; /* ボーダーを細く */ padding-bottom: 3px; /* パディングを減らす */ margin-top: 15px; /* マージンを減らす */ margin-bottom: 5px; /* マージンを減らす */ }}
+        .section {{ margin-bottom: 15px; /* マージンを減らす */ }}
+        .field {{ margin-bottom: 5px; /* マージンを減らす */ }}
+        .field strong {{ display: inline-block; width: 120px; /* 幅を減らす */ color: #555; vertical-align: top; }}
+        .field span {{ display: inline-block; max-width: calc(100% - 130px); /* 幅を増やす */ word-wrap: break-word; }}
+        .situation, .countermeasure {{ border: 1px solid #ddd; padding: 10px; /* パディングを減らす */ border-radius: 5px; background-color: #f9f9f9; white-space: pre-wrap; font-size: 11px; /* テキストエリアのフォントサイズも小さく */ }}
+        .footer {{ text-align: center; margin-top: 20px; /* マージンを減らす */ font-size: 0.7em; color: #777; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>インシデント報告書（下書き）</h1>
+        <!-- 基本情報と患者情報は削除 -->
+
+        <div class="section">
+            <h2>インシデントの詳細</h2>
+            <div class="field"><strong>大分類:</strong> <span>{content_category}</span></div>
+            <div class="field"><strong>詳細内容:</strong> <span>{content_details}</span></div>
+            <div class="field"><strong>発生・発見の原因:</strong> <span>{cause_details}</span></div>
+            <div class="field"><strong>マニュアルとの関連:</strong> <span>{manual_relation}</span></div>
+        </div>
+
+        <div class="section">
+            <h2>状況と対策</h2>
+            <h3>発生の状況と直後の対応</h3>
+            <div class="situation">{situation}</div>
+            <h3>今後の対策</h3>
+            <div class="countermeasure">{countermeasure}</div>
+        </div>
+
+        <div class="footer">
+            <p>下書きタイトル: {draft_title}</p>
+            <p>下書き生成日時: {created_at}</p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+def generate_draft_html_content(draft_data: dict, draft_title: str, created_at: str) -> str:
+    """下書きデータからHTMLコンテンツを生成します"""
+    # 辞書内のNone値を空文字列に変換して、format()でエラーが出ないようにする
+    formatted_data = {k: v if v is not None else "N/A" for k, v in draft_data.items()}
+
+    # 日付/時刻のフォーマット
+    if 'occurrence_date' in formatted_data and formatted_data['occurrence_date'] != "N/A":
+        try:
+            # occurrence_dateとoccurrence_timeを結合してdatetimeオブジェクトを作成
+            occurrence_date_obj = datetime.date.fromisoformat(formatted_data['occurrence_date'])
+            occurrence_time_obj = datetime.time.fromisoformat(formatted_data['occurrence_time'])
+            occurrence_datetime_obj = datetime.datetime.combine(occurrence_date_obj, occurrence_time_obj)
+            formatted_data['occurrence_datetime'] = occurrence_datetime_obj.strftime("%Y年%m月%d日 %H時%M分")
+        except (ValueError, TypeError):
+            formatted_data['occurrence_datetime'] = "N/A" # 変換できない場合はN/A
+
+    # content_detailsの結合
+    content_details_list = []
+    if formatted_data.get('content_category') == "診察":
+        content_details_list.extend(formatted_data.get('content_details_shinsatsu', []))
+    elif formatted_data.get('content_category') == "処置":
+        content_details_list.extend(formatted_data.get('content_details_shochi', []))
+    elif formatted_data.get('content_category') == "受付":
+        content_details_list.extend(formatted_data.get('content_details_uketsuke', []))
+    elif formatted_data.get('content_category') == "放射線業務":
+        content_details_list.extend(formatted_data.get('content_details_houshasen', []))
+    elif formatted_data.get('content_category') == "リハビリ業務":
+        content_details_list.extend(formatted_data.get('content_details_rehabili', []))
+    elif formatted_data.get('content_category') == "転倒・転落":
+        content_details_list.extend(formatted_data.get('content_details_tentou', []))
+        if formatted_data.get('injury_details'):
+            injury_str = f"(外傷: {', '.join(formatted_data['injury_details'])})"
+            if formatted_data.get('injury_other_text'):
+                injury_str += f" その他: {formatted_data['injury_other_text']}"
+            content_details_list.append(injury_str)
+    elif formatted_data.get('content_category') == "患者対応":
+        content_details_list.extend(formatted_data.get('content_details_kanjataio', []))
+    elif formatted_data.get('content_category') == "機器関連":
+        content_details_list.extend(formatted_data.get('content_details_kiki', []))
+    elif formatted_data.get('content_category') == "その他":
+        content_details_list.extend(formatted_data.get('content_details_sonota', []))
+    formatted_data['content_details'] = ", ".join(content_details_list)
+
+    # cause_detailsの結合 (1_新規報告.pyのロジックを再現)
+    cause_list = []
+    # cause_optionsは1_新規報告.pyで定義されているが、ここではハードコードするか、引数で渡す必要がある
+    # 簡単のため、ここでは主要な原因カテゴリを直接参照する
+    cause_categories = ["不適切な指示", "無確認", "指示の見落としなど", "患者観察の不足", "説明・知識・経験の不足", "偶発症・災害", "発生時の状況"]
+    for category in cause_categories:
+        items = formatted_data.get(f"cause_{category}", [])
+        if items:
+            item_str = f"{category}: {', '.join(items)}"
+            if "その他" in items and formatted_data.get(f"cause_{category}_other"):
+                item_str += f" ({formatted_data[f'cause_{category}_other']})"
+            cause_list.append(item_str)
+    formatted_data['cause_details'] = " | ".join(cause_list)
+
+
+    # その他のフィールドのデフォルト値設定
+    formatted_data['draft_title'] = draft_title
+    formatted_data['created_at'] = pd.to_datetime(created_at).strftime('%Y年%m月%d日 %H時%M分') # 下書き保存日時
+
+    # HTMLテンプレートにデータを埋め込む
+    return DRAFT_HTML_TEMPLATE.format(**formatted_data)
+
+def generate_draft_pdf_bytes(draft_data: dict, draft_title: str, created_at: str) -> bytes:
+    """下書きデータからPDFのバイトストリームを生成します"""
+    html_content = generate_draft_html_content(draft_data, draft_title, created_at)
+    return HTML(string=html_content).write_pdf()
+
 class DateTimeEncoder(json.JSONEncoder):
     """datetime, date, timeオブジェクトをJSONシリアライズ可能にするためのエンコーダー"""
     def default(self, obj):
