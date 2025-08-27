@@ -203,6 +203,7 @@ else:
             data_cols[6].write(report.get('影響度レベル', '-'))
             if data_cols[7].button("詳細", key=f"detail_btn_{report['報告ID']}", use_container_width=True):
                 st.session_state.selected_report_id = report['報告ID']
+                st.session_state.scroll_to_detail = True # スクロールフラグを立てる
                 st.rerun()
             st.markdown("<hr style='margin-top: 0; margin-bottom: 0;'>", unsafe_allow_html=True)
 
@@ -225,8 +226,27 @@ else:
 
     # --- 詳細表示エリア ---
     if st.session_state.selected_report_id is not None:
-        st.markdown("---")
-        st.markdown(f"<h2 style='text-align: center; color: #2c3e50; margin-bottom: 20px;'>インシデント報告詳細レポート <br> <small style='font-size: 0.6em; color: #7f8c8d;'>報告ID: {st.session_state.selected_report_id}</small></h2>", unsafe_allow_html=True)
+        # レポートIDをキーとしてコンテナを作成し、再描画を強制する
+        detail_container = st.container(key=f"detail_container_{st.session_state.selected_report_id}")
+        with detail_container:
+            # --- スクロール処理 ---
+            if st.session_state.get("scroll_to_detail"):
+                st.components.v1.html("""
+                    <script>
+                        // 少し待ってからスクロールを実行
+                        setTimeout(() => {
+                            const element = window.parent.document.getElementById("report-detail-anchor");
+                            if (element) {
+                                element.scrollIntoView({behavior: "smooth"});
+                            }
+                        }, 300); // 遅延を300msに増やす
+                    </script>
+                """, height=0)
+                st.session_state.scroll_to_detail = False # フラグをリセット
+
+            st.markdown("<div id='report-detail-anchor'></div>", unsafe_allow_html=True) # スクロール先のアンカー
+            st.markdown("---")
+            st.markdown(f"<h2 style='text-align: center; color: #2c3e50; margin-bottom: 20px;'>インシデント報告詳細レポート <br> <small style='font-size: 0.6em; color: #7f8c8d;'>報告ID: {st.session_state.selected_report_id}</small></h2>", unsafe_allow_html=True)
         
         selected_report_details = filtered_df[filtered_df['報告ID'] == st.session_state.selected_report_id]
 
