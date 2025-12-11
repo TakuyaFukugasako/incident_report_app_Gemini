@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import sqlite3
 import pandas as pd
 import datetime
@@ -217,6 +217,18 @@ def init_db():
                 cursor.execute(f"ALTER TABLE reports ADD COLUMN {col_name} {col_type}")
 
         
+
+        # --- usersテーブルのマイグレーション ---
+        cursor.execute("PRAGMA table_info(users)")
+        user_columns = [row[1] for row in cursor.fetchall()]
+        
+        expected_columns_users = {
+            "lineworks_id": "TEXT"
+        }
+        
+        for col_name, col_type in expected_columns_users.items():
+            if col_name not in user_columns:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
 
         # --- 下書きテーブル ---
         cursor.execute('''
@@ -458,7 +470,7 @@ def get_all_users():
     with get_db_connection() as conn:
         conn.row_factory = sqlite3.Row # カラム名をキーとしてアクセスできるようにする
         cursor = conn.cursor()
-        cursor.execute("SELECT id, username, role, created_at FROM users ORDER BY username")
+        cursor.execute("SELECT id, username, role, lineworks_id, created_at FROM users ORDER BY username")
         users_data = cursor.fetchall()
         return [dict(row) for row in users_data]
 
@@ -483,6 +495,38 @@ def delete_user(user_id):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
+
+def update_user_lineworks_id(user_id, lineworks_id):
+    """ユーザーのLINE WORKS IDを更新します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET lineworks_id = ? WHERE id = ?", (lineworks_id, user_id))
+        conn.commit()
+
+def get_user_lineworks_id_by_reporter_name(reporter_name):
+    """報告者名からLINE WORKS IDを取得します"""
+    with get_db_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT lineworks_id FROM users WHERE username = ?", (reporter_name,))
+        result = cursor.fetchone()
+        return result['lineworks_id'] if result and result['lineworks_id'] else None
+
+def update_user_lineworks_id(user_id, lineworks_id):
+    """ユーザーのLINE WORKS IDを更新します"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET lineworks_id = ? WHERE id = ?", (lineworks_id, user_id))
+        conn.commit()
+
+def get_user_lineworks_id_by_reporter_name(reporter_name):
+    """報告者名からLINE WORKS IDを取得します"""
+    with get_db_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT lineworks_id FROM users WHERE username = ?", (reporter_name,))
+        result = cursor.fetchone()
+        return result['lineworks_id'] if result and result['lineworks_id'] else None
 
 # --- 下書き関連 ---
 

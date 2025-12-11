@@ -1,5 +1,5 @@
 import streamlit as st
-from db_utils import get_all_users, update_user_role, update_user_password, delete_user, add_user
+from db_utils import get_all_users, update_user_role, update_user_password, delete_user, add_user, update_user_lineworks_id
 import bcrypt
 import pandas as pd
 import os
@@ -84,6 +84,17 @@ else:
                         update_user_password(selected_user_id, new_password)
                         st.session_state.user_management_message = f"{selected_username} のパスワードをリセットしました。"
                         st.session_state.user_management_message_type = "success"
+                    st.rerun()
+
+            # LINE WORKS ID編集
+            with st.form(key=f"edit_lineworks_id_form_{selected_user_id}"):
+                st.write("**LINE WORKS IDの設定**")
+                current_lineworks_id = current_user_data.get('lineworks_id', '') or ''
+                new_lineworks_id = st.text_input("LINE WORKS ID", value=current_lineworks_id, placeholder="例: user@example.com")
+                if st.form_submit_button("LINE WORKS IDを更新"):
+                    update_user_lineworks_id(selected_user_id, new_lineworks_id if new_lineworks_id else None)
+                    st.session_state.user_management_message = f"{selected_username} のLINE WORKS IDを更新しました。"
+                    st.session_state.user_management_message_type = "success"
                     st.rerun()
 
             # ユーザー削除

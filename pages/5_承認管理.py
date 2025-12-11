@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from db_utils import get_all_reports, update_report_status
+from db_utils import get_all_reports, update_report_status, get_user_lineworks_id_by_reporter_name
+from lineworks_bot import send_text_message_to_user
 import datetime
 
 # --- 認証チェック ---
@@ -216,6 +217,35 @@ else:
                             update_report_status(st.session_state.selected_approval_report_id, updates, approver_id=st.session_state.get('id'))
                             st.success("承認状態を更新しました。")
                             st.session_state.selected_approval_report_id = None # 承認後、選択状態をリセット
+                            st.rerun()
+
+                # --- 差し戻しフォーム ---
+                st.markdown("---")
+                with st.form(key='rejection_form_in_approval_page'):
+                    st.markdown("<b>差し戻しアクション</b>", unsafe_allow_html=True)
+                    rejection_reason = st.text_area("差し戻し理由（必須）", placeholder="書類の不備や修正が必要な点を入力してください")
+                    if st.form_submit_button(" 差し戻す", use_container_width=True, type="secondary"):
+                        if not rejection_reason:
+                            st.error("差し戻し理由を入力してください。")
+                        else:
+                            updates = {
+                                'status': '差し戻し',
+                                'manager_comments': f"【差し戻し理由】{rejection_reason}"
+                            }
+                            update_report_status(st.session_state.selected_approval_report_id, updates)
+                            
+                            # 報告者にLINE WORKS通知を送信
+                            reporter_name = selected_report_details.get('報告者', '')
+                            lineworks_id = get_user_lineworks_id_by_reporter_name(reporter_name) if reporter_name else None
+                            if lineworks_id:
+                                message = f"【インシデント報告 差し戻し通知】\n\n報告ID: {st.session_state.selected_approval_report_id}\n\n差し戻し理由:\n{rejection_reason}\n\n修正後、再提出をお願いします。"
+                                send_text_message_to_user(message, lineworks_id)
+                                st.info("報告者にLINE WORKS通知を送信しました。")
+                            else:
+                                st.warning("報告者のLINE WORKS IDが設定されていないため、通知は送信されませんでした。")
+                            
+                            st.success("レポートを差し戻しました。")
+                            st.session_state.selected_approval_report_id = None
                             st.rerun()
 
             st.markdown("</div>", unsafe_allow_html=True)

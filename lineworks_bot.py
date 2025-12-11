@@ -113,3 +113,48 @@ def send_line_works_file(file_path: str, user_id: str):
     except Exception as e:
         print(f"エラーが発生しました: {e}")
         return False
+
+
+def send_text_message_to_user(text_message: str, user_id: str):
+    """
+    指定されたテキストメッセージを指定されたユーザー（個人）に送信する。
+    Args:
+        text_message (str): 送信するテキストメッセージ。
+        user_id (str): 送信先のユーザーID（LINE WORKS ID）。
+    Returns:
+        bool: 成功した場合はTrue、失敗した場合はFalse。
+    """
+    try:
+        print(f"--- 開始: テキストメッセージ送信処理 (To User: {user_id}) ---")
+        # 環境変数から設定を読み込み
+        client_id = os.environ.get("LW_API_20_CLIENT_ID")
+        client_secret = os.environ.get("LW_API_20_CLIENT_SECRET")
+        service_account_id = os.environ.get("LW_API_20_SERVICE_ACCOUNT_ID")
+        privatekey_raw = os.environ.get("LW_API_20_PRIVATEKEY")
+        bot_id = os.environ.get("LW_API_20_BOT_ID")
+
+        if not all([client_id, client_secret, service_account_id, privatekey_raw, bot_id]):
+            raise ValueError("必要な環境変数が設定されていません。")
+
+        privatekey = privatekey_raw.replace('\\n', '\n')
+
+        # 1. アクセストークン取得
+        print("1. アクセストークンを取得中...")
+        jwt_token = _get_jwt(client_id, service_account_id, privatekey)
+        access_token = _get_access_token(client_id, client_secret, "bot", jwt_token)
+        if not access_token:
+            raise ValueError("アクセストークンの取得に失敗しました。")
+        print("   -> 取得成功")
+
+        # 2. テキストメッセージを送信
+        print("2. テキストメッセージをユーザーに送信中...")
+        text_content = {"content": {"type": "text", "text": text_message}}
+        _send_bot_message(text_content, bot_id, user_id, access_token)
+        print("   -> 送信成功")
+
+        print("--- 完了: 全ての処理が成功しました ---")
+        return True
+
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+        return False
