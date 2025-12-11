@@ -45,7 +45,7 @@ else:
             with col_pdf: # 新しいカラムにPDF出力ボタンを追加
                 pdf_bytes = generate_draft_pdf_bytes(draft_data, row['title'], row['created_at'])
                 st.download_button(
-                    label="📄 PDF出力",
+                    label="📄 印刷",
                     data=pdf_bytes,
                     file_name=f"{row['title']}.pdf",
                     mime="application/pdf",
